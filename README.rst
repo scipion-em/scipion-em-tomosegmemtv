@@ -1,5 +1,5 @@
 ==============================
-Scipion - TomoSegMembTV plugin
+Scipion - TomoSegMemTV plugin
 ==============================
 
 Scipion plugin for segmentation and annotation of membranes (with tomoSegmenTV and membSegAnnotator)
