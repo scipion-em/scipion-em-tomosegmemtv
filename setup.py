@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-from tomosegmembtv import __version__
+from tomosegmemtv import __version__
 
 here = path.abspath(path.dirname(__file__))
 
@@ -26,9 +26,9 @@ with open('requirements.txt') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='scipion-em-tomosegmembtv',  # Required
+    name='scipion-em-tomosegmemtv',  # Required
     version=__version__,  # Required
-    description='Scipion plugin tomosegmembtv.',  # Required
+    description='Scipion plugin tomosegmemtv.',  # Required
     long_description=long_description,  # Optional
     url='https://github.com/scipion-em/scipion-em-tomosegmembtv',  # Optional
     author='you',  # Optional
@@ -37,9 +37,9 @@ setup(
     packages=find_packages(),
     install_requires=[requirements],
     entry_points={
-        'pyworkflow.plugin': 'tomosegmembtv = tomosegmembtv'
+        'pyworkflow.plugin': 'tomosegmemtv = tomosegmemtv'
     },
     package_data={  # Optional
-       'tomosegmembtv': ['protocols.conf'],
+       'tomosegmemtv': ['protocols.conf'],
     }
 )

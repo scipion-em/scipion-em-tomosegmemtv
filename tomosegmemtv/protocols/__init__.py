@@ -24,7 +24,4 @@
 # *
 # **************************************************************************
 
-from .protocol_tensor_voting import ProtTomoSegmenTVTensorVoting
-from .protocol_membrane_delineation import ProtTomoSegmenTVDelineation
-from .protocol_membrane_density_thresholding import ProtTomoSegmenTVDensityTh
-from .protocol_membrane_size_thresholding import ProtTomoSegmenTVSizeTh
+from .protocol_tomosegmentv import ProtTomoSegmenTV
