@@ -82,16 +82,14 @@ class ProtTomoSegmenTV(EMProtocol):
                             'use lower values (e.g. 0.5)')
         group.addParam('sigmaP', FloatParam,
                        label='Sigma for the post-processing gaussian filtering',
-                       default=1,
+                       default=0,
                        expertLevel=LEVEL_ADVANCED,
                        allowsNull=False,
                        help='This option refers to the post-processing Gaussian filtering that is applied '
-                            'to the output tomogram. If sigma were set to 0, no such filtering is applied and '
-                            'the program will produce 1-voxel-thick membranes. However, this type of thin '
-                            'membranes might give problems with the subsequent stages (thresholding+global '
-                            'analysis, based on 6-connectivity). For that reason, the default value for '
-                            'post-processing Gaussian filtering is 1.0. Use lower values (e.g 0.5) for membranes '
-                            'that are very thin or are very close to each other.'
+                            'to the output tomogram. If sigma is set to 0, no such filtering will be applied and '
+                            'the program will produce 1-voxel-thick membranes. If the filter is desired to be applied, '
+                            'use lower values (e.g 0.5) for membranes that are very thin or are very close to each '
+                            'other.'
                       )
 
     def _insertAllSteps(self):
