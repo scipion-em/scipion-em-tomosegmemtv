@@ -1,4 +1,5 @@
-from os.path import join
+from os import remove
+from os.path import abspath
 
 from pwem.protocols import EMProtocol
 from pyworkflow import BETA
@@ -10,6 +11,13 @@ from tomosegmemtv import Plugin
 
 MRC = '.mrc'
 
+# Generated files suffixes
+S2 = '_s2'
+TV = '_tv'
+SURF = '_surf'
+TV2 = '_tv2'
+FLT = '_flt'
+SUFFiXES_2_REMOVE = [S2, TV, SURF, TV2]
 
 class ProtTomoSegmenTV(EMProtocol):
     """"""
@@ -90,6 +98,19 @@ class ProtTomoSegmenTV(EMProtocol):
                             'the program will produce 1-voxel-thick membranes. If the filter is desired to be applied, '
                             'use lower values (e.g 0.5) for membranes that are very thin or are very close to each '
                             'other.'
+                       )
+        form.addParam('keepAllFiles', BooleanParam,
+                      label='Keep all the generated files?',
+                      default=False,
+                      expertLevel=LEVEL_ADVANCED,
+                      help='If set to Yes, a file will be kept for each step carried out in the protocol. If set to '
+                           'No, only the file corresponding to the last step will be kept. Steps followed and the '
+                           'corresponding generated files are listed below:\n\n'
+                           '   - Scale-space --> *filename%s.mrc*\n'
+                           '   - First tensor voting --> *filename%s.mrc*\n'
+                           '   - Surfaceness --> *filename%s.mrc*\n'
+                           '   - Second tensor voting --> *filename%s.mrc*\n'
+                           '   - Saliency --> *filename%s.mrc*' % (S2, TV, SURF, TV2, FLT)
                       )
 
     def _insertAllSteps(self):
@@ -101,25 +122,28 @@ class ProtTomoSegmenTV(EMProtocol):
     def runTomoSegmenTV(self, tomoFile):
         tomoBaseName = removeBaseExt(tomoFile)
         # Scale space
-        s2OutputFile = self._getExtraPath(tomoBaseName + '_s2' + MRC)
+        s2OutputFile = self._getExtraPath(tomoBaseName + S2 + MRC)
         Plugin.runTomoSegmenTV(self, 'scale_space', self._getScaleSpaceCmd(tomoFile, s2OutputFile))
         # Tensor voting
-        tVOutputFile = self._getExtraPath(tomoBaseName + '_tv' + MRC)
+        tVOutputFile = self._getExtraPath(tomoBaseName + TV + MRC)
         Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(s2OutputFile, tVOutputFile))
         # Surfaceness
-        surfOutputFile = self._getExtraPath(tomoBaseName + '_surf' + MRC)
+        surfOutputFile = self._getExtraPath(tomoBaseName + SURF + MRC)
         Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSurfCmd(tVOutputFile, surfOutputFile))
         # Tensor voting - second round (to fill potential gaps and increase the robustness of the surfaceness map)
-        tV2OutputFile = self._getExtraPath(tomoBaseName + '_tv2' + MRC)
+        tV2OutputFile = self._getExtraPath(tomoBaseName + TV2 + MRC)
         Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(surfOutputFile, tV2OutputFile))
         # Saliency - second round (apply again the surfaceness program, but this time to produce the saliency)
-        salOutputFile = self._getExtraPath(tomoBaseName + '_sal' + MRC)
+        salOutputFile = self._getExtraPath(tomoBaseName + FLT + MRC)
         Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSalCmd(tV2OutputFile, salOutputFile))
         self.tomoMaskListDelineated.append(salOutputFile)
+        # Remove intermediate files if requested
+        if not self.keepAllFiles.get():
+            self._removeIntermediateFiles(tomoFile)
 
     def createOutputStep(self):
-        labelledSet = self._genOutputSetOfTomoMasks(self.tomoMaskListDelineated, 'delineated')
-        self._defineOutputs(outputDelineatedSetofTomoMasks=labelledSet)
+        labelledSet = self._genOutputSetOfTomoMasks(self.tomoMaskListDelineated, 'segmented')
+        self._defineOutputs(outputSetofTomoMasks=labelledSet)
 
     def _genOutputSetOfTomoMasks(self, tomoMaskList, suffix):
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix=suffix)
@@ -135,6 +159,11 @@ class ProtTomoSegmenTV(EMProtocol):
             counter += 1
 
         return tomoMaskSet
+
+    def _removeIntermediateFiles(self, tomoFile):
+        tomoBaseName = removeBaseExt(tomoFile)
+        for suffix in SUFFiXES_2_REMOVE:
+            remove(abspath(self._getExtraPath(tomoBaseName + suffix + MRC)))
 
     # --------------------------- INFO functions -----------------------------------
     def _summary(self):
