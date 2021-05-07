@@ -23,5 +23,5 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-
+from .protocol_annotate_membranes import ProtAnnotateMembranes
 from .protocol_tomosegmentv import ProtTomoSegmenTV

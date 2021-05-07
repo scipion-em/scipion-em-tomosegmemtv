@@ -31,7 +31,7 @@ import os
 from pyworkflow.utils import Environ
 
 from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV_DEFAULT_VERSION, MEMBANNOTATOR, \
-    MEMBANNOTATOR_DEFAULT_VERSION, TOMOSEGMENTV
+    MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_DIR, TOMOSEGMEMTV_DIR
 
 _references = ['MartinezSanchez2014']
 __version__ = '3.0.0'
@@ -63,8 +63,8 @@ class Plugin(pwem.Plugin):
     @classmethod
     def defineBinaries(cls, env):
         # At this point of the installation execution cls.getHome() is None, so the em path should be provided
-        pluginHome = join(pwem.Config.EM_ROOT, TOMOSEGMEMTV + '-' + TOMOSEGMEMTV_DEFAULT_VERSION)
-        tomoSegmenTVHome = join(pluginHome, TOMOSEGMENTV)
+        pluginHome = join(pwem.Config.EM_ROOT, TOMOSEGMEMTV_DIR)
+        tomoSegmenTVHome = join(pluginHome, TOMOSEGMEMTV)
         membraneAnnotatorHome = join(pluginHome, MEMBANNOTATOR)
 
         TOMOSEGMEMTV_INSTALLED = '%s_installed' % TOMOSEGMEMTV
@@ -72,10 +72,10 @@ class Plugin(pwem.Plugin):
         # Jesús website, filling a form
         tomosegmemtvInstallcmd = 'mkdir %s && ' % tomoSegmenTVHome
         # Membrane annotator
-        # membAnnInstallationCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
+        membAnnInstallationCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
 
-        # installationCmd = ' && '.join([tomosegmemtvInstallcmd, membAnnInstallationCmd])
-        installationCmd = tomosegmemtvInstallcmd
+        installationCmd = ' && '.join([tomosegmemtvInstallcmd, membAnnInstallationCmd])
+        # installationCmd = tomosegmemtvInstallcmd
         installationCmd += 'touch %s' % TOMOSEGMEMTV_INSTALLED  # Flag installation finished
 
         env.addPackage(TOMOSEGMEMTV,
@@ -86,18 +86,18 @@ class Plugin(pwem.Plugin):
                        default=True)
 
     @classmethod
-    def runMembraneAnnotator(cls, protocol):
+    def runMembraneAnnotator(cls, protocol, arguments, env=None, cwd=None):
         """ Run membraneAnnotator command from a given protocol. """
-        protocol.runJob(cls.getHome(MEMBANNOTATOR, 'application', MEMBANNOTATOR))
+        protocol.runJob(cls.getHome(MEMBANNOTATOR_DIR, 'application', MEMBANNOTATOR), arguments, env=env, cwd=cwd)
 
     @classmethod
     def runTomoSegmenTV(cls, protocol, program, args, cwd=None):
         """ Run tomoSegmenTV command from a given protocol. """
-        protocol.runJob(join(cls.getHome(TOMOSEGMENTV, 'bin', program)), args, cwd=cwd)
+        protocol.runJob(join(cls.getHome(TOMOSEGMEMTV, 'bin', program)), args, cwd=cwd)
 
     @classmethod
     def getMCRPath(cls):
-        return cls.getHome(MEMBANNOTATOR, 'v99')
+        return cls.getHome(MEMBANNOTATOR_DIR, 'v99')
 
     @classmethod
     def _genMembAnnCmd(cls, membraneAnnotatorHome):

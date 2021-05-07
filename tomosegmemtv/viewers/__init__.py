@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 # **************************************************************************
 # *
 # * Authors:     Scipion Team
 # *
-# * your institution
+# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -21,17 +20,7 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'you@yourinstitution.email'
+# *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from os.path import join
-
-TOMOSEGMEMTV = 'tomoSegMemTV'
-TOMOSEGMEMTV_HOME = 'TOMOSEGMEMTV_HOME'
-TOMOSEGMEMTV_DEFAULT_VERSION = '1.0.0'
-TOMOSEGMEMTV_EM_DIR = TOMOSEGMEMTV + '-' + TOMOSEGMEMTV_DEFAULT_VERSION
-TOMOSEGMEMTV_DIR = join(TOMOSEGMEMTV_EM_DIR, TOMOSEGMEMTV)
-
-MEMBANNOTATOR = 'MembraneAnnotator'
-MEMBANNOTATOR_DEFAULT_VERSION = '2.0'
-MEMBANNOTATOR_DIR = MEMBANNOTATOR + '-' + MEMBANNOTATOR_DEFAULT_VERSION
+from tomosegmemtv.viewers.memb_annotator_tomo_viewer import MembAnnotatorDialog

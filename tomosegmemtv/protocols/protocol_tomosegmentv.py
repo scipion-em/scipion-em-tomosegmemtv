@@ -19,8 +19,9 @@ TV2 = '_tv2'
 FLT = '_flt'
 SUFFiXES_2_REMOVE = [S2, TV, SURF, TV2]
 
+
 class ProtTomoSegmenTV(EMProtocol):
-    """"""
+    """Segment membranes in tomograms"""
 
     _label = 'tomogram segmentation'
     _devStatus = BETA
