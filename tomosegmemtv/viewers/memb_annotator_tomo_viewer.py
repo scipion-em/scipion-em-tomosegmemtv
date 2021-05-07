@@ -27,7 +27,7 @@
 import glob
 import os
 import threading
-from os.path import abspath, basename, join
+from os.path import abspath, basename, join, exists
 from pyworkflow import utils as pwutils
 from pyworkflow.gui.dialog import ToolbarListDialog
 from pyworkflow.utils.path import moveFile, cleanPath, getParentFolder
@@ -75,7 +75,8 @@ class MembAnnotatorDialog(ToolbarListDialog):
         # is generated in the extra dir of the segmentation protocol pointing to the selected tomogram
         tomoNameSrc = abspath(tomoMask.getVolName())
         tomoName = abspath(join(getParentFolder(tomoMask.getFileName()), basename(tomoNameSrc)))
-        os.symlink(tomoNameSrc, tomoName)
+        if not exists(tomoName):
+            os.symlink(tomoNameSrc, tomoName)
         arguments = "inTomoFile '%s'" % tomoName
         Plugin.runMembraneAnnotator(self.prot, arguments, env=Plugin.getMembSegEnviron(), cwd=self.path)
 
