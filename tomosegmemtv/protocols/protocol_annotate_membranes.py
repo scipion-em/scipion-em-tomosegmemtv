@@ -22,66 +22,89 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+import glob
 from pyworkflow import BETA
-from pyworkflow.gui.dialog import askYesNo
-from pyworkflow.utils import Message
+from pyworkflow.object import Integer
+from pyworkflow.utils import removeBaseExt
+from tomo.objects import SetOfTomoMasks, TomoMask
 from tomo.protocols import ProtTomoPicking
-from tomo.viewers.views_tkinter_tree import TomogramsTreeProvider
-
 from tomosegmemtv.viewers.memb_annotator_tomo_viewer import MembAnnotatorDialog
+from tomosegmemtv.viewers.memb_annotator_tree import MembAnnotatorProvider
 
 
 class ProtAnnotateMembranes(ProtTomoPicking):
     """ Manual annotation tool for segmented membranes
     """
-    _label = 'Annotate segmented membranes'
+    _label = 'annotate segmented membranes'
     _devStatus = BETA
 
     def __init__(self, **kwargs):
         ProtTomoPicking.__init__(self, **kwargs)
-
-    # --------------------------- DEFINE param functions ----------------------
+        self._objectsToGo = Integer()
+        self._provider = None
+        self._tomoList = None
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
+        self._initialize()
         self._insertFunctionStep('runMembraneAnnotator', interactive=True)
-        self._insertFunctionStep('createOutputStep')
 
     # --------------------------- STEPS functions -----------------------------
 
     def runMembraneAnnotator(self):
+        # There are still some objects which haven't been annotated --> launch GUI
+        self._getAnnotationStatus()
+        if self._objectsToGo.get() > 0:
+            MembAnnotatorDialog(None, self._getExtraPath(), provider=self._provider, prot=self)
 
-        tomoList = [tomo.clone() for tomo in self.inputTomograms.get().iterItems()]
-        tomoProvider = TomogramsTreeProvider(tomoList, self._getExtraPath(), 'mrc')
-        self.dlg = MembAnnotatorDialog(None, self._getExtraPath(), provider=tomoProvider, prot=self)
+        # All the objetcs have been annotated --> create output objects
+        self._getAnnotationStatus()
+        if self._objectsToGo.get() == 0:
+            print("\n==> Generating the outputs")
+            labelledSet = self._genOutputSetOfTomoMasks()
+            self._defineOutputs(outputSetofTomoMasks=labelledSet)
 
-        # # Open dialog to request confirmation to create output
-        # import tkinter as tk
-        # frame = tk.Frame()
-        # if askYesNo(Message.TITLE_SAVE_OUTPUT, Message.LABEL_SAVE_OUTPUT, frame):
-        #     self._createOutput()
+        self._store()
 
-    def createOutputStep(self):
-        pass
+    # --------------------------- INFO functions -----------------------------------
+    def _summary(self):
+        summary = []
+        objects2go = self._objectsToGo.get()
+        if objects2go is not None:
+            if objects2go > 0:
+                summary.append('*%i* remaining segmentations to be annotated.' % objects2go)
+            else:
+                summary.append('All segmentations have been already annotated.')
+        return summary
 
-    # def getMethods(self, output):
-    #     msg = 'User picked %d particles ' % output.getSize()
-    #     msg += 'with a particle size of %s.' % output.getBoxSize()
-    #     return msg
-    #
-    # def _methods(self):
-    #     methodsMsgs = []
-    #     if self.inputTomograms is None:
-    #         return ['Input tomogram not available yet.']
-    #
-    #     methodsMsgs.append("Input tomograms imported of dims %s." %(
-    #                           str(self.inputTomograms.get().getDim())))
-    #
-    #     if self.getOutputsSize() >= 1:
-    #         for key, output in self.iterOutputAttributes():
-    #             msg = self.getMethods(output)
-    #             methodsMsgs.append("%s: %s" % (self.getObjectTag(output), msg))
-    #     else:
-    #         methodsMsgs.append(Message.TEXT_NO_OUTPUT_CO)
-    #
-    #     return methodsMsgs
+    # --------------------------- UTIL functions -----------------------------------
+
+    def _initialize(self):
+        self._tomoList = [tomo.clone() for tomo in self.inputTomograms.get().iterItems()]
+        self._provider = MembAnnotatorProvider(self._tomoList, self._getExtraPath(), 'membAnnotator')
+        self._getAnnotationStatus()
+
+    def _getAnnotationStatus(self):
+        """Check if all the tomo masks have been annotated and store current status in a text file"""
+        doneTomes = [self._provider.getObjectInfo(tomo)['tags'] == 'done' for tomo in self._tomoList]
+        self._objectsToGo.set(len(self._tomoList) - sum(doneTomes))
+
+    def _getCurrentTomoMaskFile(self, inTomoFile):
+        baseName = removeBaseExt(inTomoFile)
+        return glob.glob(self._getExtraPath(baseName + '*_materials.mrc'))[0]
+
+    def _genOutputSetOfTomoMasks(self):
+        tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='annotated')
+        inTomoSet = self.inputTomograms.get()
+        tomoMaskSet.copyInfo(inTomoSet)
+        counter = 1
+        for inTomo in inTomoSet.iterItems():
+            tomoMask = TomoMask()
+            inTomoFile = inTomo.getVolName()
+            tomoMask.copyInfo(inTomo)
+            tomoMask.setLocation((counter, self._getCurrentTomoMaskFile(inTomoFile)))
+            tomoMask.setVolName(inTomoFile)
+            tomoMaskSet.append(tomoMask)
+            counter += 1
+
+        return tomoMaskSet

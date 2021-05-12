@@ -59,7 +59,6 @@ class ProtTomoSegmenTV(EMProtocol):
                            'Depending on the thickness of the membranes in the tomogram, lower (for '
                            'thinner membranes) or higher values (for thicker ones) may be more appropriate.'
                       )
-        # form.addParam('')
         form.addParam('blackOverWhite', BooleanParam,
                       label='Is black over white?',
                       default=True

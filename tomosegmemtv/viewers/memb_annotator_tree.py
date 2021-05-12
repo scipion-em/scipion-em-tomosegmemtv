@@ -24,14 +24,26 @@
 # *  e-mail address 'you@yourinstitution.email'
 # *
 # **************************************************************************
-from os.path import join
+from os.path import join, isfile
 
-TOMOSEGMEMTV = 'tomoSegMemTV'
-TOMOSEGMEMTV_HOME = 'TOMOSEGMEMTV_HOME'
-TOMOSEGMEMTV_DEFAULT_VERSION = '1.0.0'
-TOMOSEGMEMTV_EM_DIR = TOMOSEGMEMTV + '-' + TOMOSEGMEMTV_DEFAULT_VERSION
-TOMOSEGMEMTV_DIR = join(TOMOSEGMEMTV_EM_DIR, TOMOSEGMEMTV)
+from pyworkflow.utils import removeBaseExt
+from tomo.viewers.views_tkinter_tree import TomogramsTreeProvider
 
-MEMBANNOTATOR = 'MembraneAnnotator'
-MEMBANNOTATOR_DEFAULT_VERSION = '2.0.3'
-MEMBANNOTATOR_DIR = MEMBANNOTATOR + '-' + MEMBANNOTATOR_DEFAULT_VERSION
+
+class MembAnnotatorProvider(TomogramsTreeProvider):
+
+    def getObjectInfo(self, inTomo):
+        tomogramName = removeBaseExt(inTomo.getVolName())
+        filePath = join(self._path, tomogramName + "_materials.mrc")
+
+        if not isfile(filePath):
+            return {'key': tomogramName, 'parent': None,
+                    'text': tomogramName, 'values': "PENDING",
+                    'tags': "pending"}
+        else:
+            return {'key': tomogramName, 'parent': None,
+                    'text': tomogramName, 'values': "DONE",
+                    'tags': "done"}
+
+    def getColumns(self):
+        return [('TomoMasks (segmentations)', 300), ('status', 150)]

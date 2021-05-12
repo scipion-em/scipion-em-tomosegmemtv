@@ -24,43 +24,37 @@
 # *
 # **************************************************************************
 
-import glob
-import os
 import threading
+from os import symlink
 from os.path import abspath, basename, join, exists
-from pyworkflow import utils as pwutils
 from pyworkflow.gui.dialog import ToolbarListDialog
-from pyworkflow.utils.path import moveFile, cleanPath, getParentFolder
+from pyworkflow.utils.path import getParentFolder, removeBaseExt
 from tomosegmemtv import Plugin
 
 
 class MembAnnotatorDialog(ToolbarListDialog):
     """
-    This class extend from ListDialog to allow calling
-    an Eman subprocess from a list of Tomograms.
+    This class allows to  call a MembraneAnnotator subprocess from a list of Tomograms.
     """
+
+    tomo = None
+    proc = None
 
     def __init__(self, parent, path, **kwargs):
         self.path = path
         self.provider = kwargs.get("provider", None)
         self.prot = kwargs.get('prot', None)
         ToolbarListDialog.__init__(self, parent,
-                                   "Tomogram List",
+                                   "Membrane Annotator Object Manager",
                                    allowsEmptySelection=False,
                                    itemDoubleClick=self.doubleClickOnTomogram,
+                                   allowSelect=False,
                                    **kwargs)
 
     def refresh_gui(self):
         if self.proc.is_alive():
             self.after(1000, self.refresh_gui)
         else:
-            outFile = '*%s_material.mrc' % pwutils.removeBaseExt(self.tomo.getFileName())
-            pattern = join(self.path, outFile)
-            files = glob.glob(pattern)
-            currentFile = files[0]
-
-            moveFile(currentFile, os.path.join(self.path, basename(currentFile)))
-            cleanPath(self.path)
             self.tree.update()
 
     def doubleClickOnTomogram(self, e=None):
@@ -73,10 +67,11 @@ class MembAnnotatorDialog(ToolbarListDialog):
         # Tomo files come from one dir, while tomoMask files comes from another, because they were generated in
         # different protocols. MembraneAnnotator expects both to be in the same location, so a symbolic link is
         # is generated in the extra dir of the segmentation protocol pointing to the selected tomogram
+        print("\n==> Running Membrane Annotator:")
         tomoNameSrc = abspath(tomoMask.getVolName())
         tomoName = abspath(join(getParentFolder(tomoMask.getFileName()), basename(tomoNameSrc)))
         if not exists(tomoName):
-            os.symlink(tomoNameSrc, tomoName)
-        arguments = "inTomoFile '%s'" % tomoName
+            symlink(tomoNameSrc, tomoName)
+        arguments = "inTomoFile '%s' " % tomoName
+        arguments += "outFilename '%s'" % abspath(join(self.path, removeBaseExt(tomoName)))
         Plugin.runMembraneAnnotator(self.prot, arguments, env=Plugin.getMembSegEnviron(), cwd=self.path)
-
