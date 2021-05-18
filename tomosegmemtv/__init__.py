@@ -23,15 +23,17 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+import string
+from os.path import join, exists
+from random import choices
 
-from os.path import join
 import pwem
 import os
 
 from pyworkflow.utils import Environ
 
 from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV_DEFAULT_VERSION, MEMBANNOTATOR, \
-    MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_DIR, TOMOSEGMEMTV_DIR
+    MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
 
 _references = ['MartinezSanchez2014']
 __version__ = '3.0.0'
@@ -63,21 +65,19 @@ class Plugin(pwem.Plugin):
     @classmethod
     def defineBinaries(cls, env):
         # At this point of the installation execution cls.getHome() is None, so the em path should be provided
-        pluginHome = join(pwem.Config.EM_ROOT, TOMOSEGMEMTV_DIR)
+        pluginHome = join(pwem.Config.EM_ROOT, TOMOSEGMEMTV_EM_DIR)
         tomoSegmenTVHome = join(pluginHome, TOMOSEGMEMTV)
-        membraneAnnotatorHome = join(pluginHome, MEMBANNOTATOR)
+        membraneAnnotatorHome = join(pluginHome, MEMBANNOTATOR_EM_DIR)
+        # membraneAnnotatorTar = join(pwem.Config.EM_ROOT, MEMBANNOTATOR_EM_DIR + '.tar.gz')
 
         TOMOSEGMEMTV_INSTALLED = '%s_installed' % TOMOSEGMEMTV
+
         # TomosegmenTV: only the directory will be generated, because the binaries must be downloaded manually from José
         # Jesús website, filling a form
-        tomosegmemtvInstallcmd = 'mkdir %s && ' % tomoSegmenTVHome
-        # Membrane annotator
-        membAnnInstallationCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
-
-        installationCmd = ' && '.join([tomosegmemtvInstallcmd, membAnnInstallationCmd])
-        # installationCmd = tomosegmemtvInstallcmd
+        installationCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
+        installationCmd += 'mkdir %s && ' % tomoSegmenTVHome
+        installationCmd += 'cd %s && ' % pluginHome
         installationCmd += 'touch %s' % TOMOSEGMEMTV_INSTALLED  # Flag installation finished
-
         env.addPackage(TOMOSEGMEMTV,
                        version=TOMOSEGMEMTV_DEFAULT_VERSION,
                        tar='void.tgz',
@@ -88,7 +88,7 @@ class Plugin(pwem.Plugin):
     @classmethod
     def runMembraneAnnotator(cls, protocol, arguments, env=None, cwd=None):
         """ Run membraneAnnotator command from a given protocol. """
-        protocol.runJob(cls.getHome(MEMBANNOTATOR_DIR, 'application', MEMBANNOTATOR), arguments, env=env, cwd=cwd)
+        protocol.runJob(cls.getHome(MEMBANNOTATOR_EM_DIR, 'application', MEMBANNOTATOR_BIN), arguments, env=env, cwd=cwd)
 
     @classmethod
     def runTomoSegmenTV(cls, protocol, program, args, cwd=None):
@@ -97,21 +97,33 @@ class Plugin(pwem.Plugin):
 
     @classmethod
     def getMCRPath(cls):
-        return cls.getHome(MEMBANNOTATOR_DIR, 'v99')
+        return cls.getHome(MEMBANNOTATOR_EM_DIR, 'v99')
 
     @classmethod
     def _genMembAnnCmd(cls, membraneAnnotatorHome):
-        installationCmd = 'wget %s && ' % cls._getMembraneAnnotatorDownloadUrl(TOMOSEGMEMTV_DEFAULT_VERSION)
-        installationCmd += 'mkdir %s && ' % membraneAnnotatorHome
-        installationCmd += 'tar zxf %s && ' % (cls._getMembraneAnnotatorTGZ(TOMOSEGMEMTV_DEFAULT_VERSION))
-        installationCmd += './%s.install -mode silent -agreeToLicense yes -destinationFolder %s && ' % \
-                           (MEMBANNOTATOR, membraneAnnotatorHome)
+        tmpDest = Plugin._genTmpDest()
+        membraneAnnotatorTar = join(pwem.Config.EM_ROOT, cls._getMembraneAnnotatorTGZ())
+        installationCmd = 'mkdir %s && cd .. && ' % membraneAnnotatorHome
+        if not exists(membraneAnnotatorTar):
+            installationCmd += 'wget %s && ' % cls._getMembraneAnnotatorDownloadUrl()
+        installationCmd += 'mkdir %s && ' % tmpDest
+        installationCmd += 'tar zxf %s -C %s && ' % (membraneAnnotatorTar, tmpDest)
+        installationCmd += '%s/%s.install -mode silent -agreeToLicense yes -destinationFolder %s && ' % \
+                           (join(tmpDest,  cls._getDefaultMembAnn()), cls._getDefaultMembAnn(), membraneAnnotatorHome)
         return installationCmd
 
     @staticmethod
-    def _getMembraneAnnotatorTGZ(version):
-        return MEMBANNOTATOR + '_v' + version + '.tgz'
+    def _getMembraneAnnotatorTGZ():
+        return Plugin._getDefaultMembAnn() + '.tar.gz'
 
     @classmethod
-    def _getMembraneAnnotatorDownloadUrl(cls, version):
-        return 'http://scipion.cnb.csic.es/downloads/scipion/software/em/' + cls._getMembraneAnnotatorTGZ(version)
+    def _getMembraneAnnotatorDownloadUrl(cls):
+        return 'http://scipion.cnb.csic.es/downloads/scipion/software/em/' + cls._getMembraneAnnotatorTGZ()
+
+    @staticmethod
+    def _getDefaultMembAnn():
+        return MEMBANNOTATOR + '-' + MEMBANNOTATOR_DEFAULT_VERSION
+
+    @staticmethod
+    def _genTmpDest():
+        return join('/tmp', Plugin._getDefaultMembAnn() + '_' + ''.join(choices(string.ascii_lowercase, k=4)))
