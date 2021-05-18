@@ -132,7 +132,8 @@ class ProtTomoSegmenTV(EMProtocol):
         Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSurfCmd(tVOutputFile, surfOutputFile))
         # Tensor voting - second round (to fill potential gaps and increase the robustness of the surfaceness map)
         tV2OutputFile = self._getExtraPath(tomoBaseName + TV2 + MRC)
-        Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(surfOutputFile, tV2OutputFile))
+        Plugin.runTomoSegmenTV(self, 'dtvoting',
+                               self._getTensorVotingCmd(surfOutputFile, tV2OutputFile, isFirstRound=False))
         # Saliency - second round (apply again the surfaceness program, but this time to produce the saliency)
         salOutputFile = self._getExtraPath(tomoBaseName + FLT + MRC)
         Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSalCmd(tV2OutputFile, salOutputFile))
@@ -178,10 +179,12 @@ class ProtTomoSegmenTV(EMProtocol):
         outputCmd += '%s ' % outputFile
         return outputCmd
 
-    def _getTensorVotingCmd(self, inputFile, outputFile):
+    def _getTensorVotingCmd(self, inputFile, outputFile, isFirstRound=True):
         outputCmd = '-s %s ' % self.mbScaleFactor.get()
-        if not self.blackOverWhite.get():
+        if isFirstRound and not self.blackOverWhite.get():
             outputCmd += '-w '
+        elif not isFirstRound:
+            outputCmd += '-w '  # After the first tensor voting, the image will be always white over black
         outputCmd += '%s ' % inputFile
         outputCmd += '%s ' % outputFile
         return outputCmd
