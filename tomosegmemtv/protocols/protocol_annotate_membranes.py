@@ -23,26 +23,38 @@
 # *
 # **************************************************************************
 import glob
+
+from pwem.protocols import EMProtocol
 from pyworkflow import BETA
 from pyworkflow.object import Integer
+from pyworkflow.protocol import PointerParam
 from pyworkflow.utils import removeBaseExt
 from tomo.objects import SetOfTomoMasks, TomoMask
-from tomo.protocols import ProtTomoPicking
 from tomosegmemtv.viewers.memb_annotator_tomo_viewer import MembAnnotatorDialog
 from tomosegmemtv.viewers.memb_annotator_tree import MembAnnotatorProvider
 
 
-class ProtAnnotateMembranes(ProtTomoPicking):
+class ProtAnnotateMembranes(EMProtocol):
     """ Manual annotation tool for segmented membranes
     """
     _label = 'annotate segmented membranes'
     _devStatus = BETA
 
     def __init__(self, **kwargs):
-        ProtTomoPicking.__init__(self, **kwargs)
+        EMProtocol.__init__(self, **kwargs)
         self._objectsToGo = Integer()
         self._provider = None
         self._tomoList = None
+        
+    def _defineParams(self, form):
+
+        form.addSection(label='Input')
+        form.addParam('inputTomoMasks', PointerParam,
+                      label="Input Tomo Masks",
+                      important=True,
+                      pointerClass='SetOfTomoMasks',
+                      allowsNull=False,
+                      help='Select the Tomogram Masks (segmented tomograms) for the membrane annotation.')
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
@@ -80,7 +92,7 @@ class ProtAnnotateMembranes(ProtTomoPicking):
     # --------------------------- UTIL functions -----------------------------------
 
     def _initialize(self):
-        self._tomoList = [tomo.clone() for tomo in self.inputTomograms.get().iterItems()]
+        self._tomoList = [tomo.clone() for tomo in self.inputTomoMasks.get().iterItems()]
         self._provider = MembAnnotatorProvider(self._tomoList, self._getExtraPath(), 'membAnnotator')
         self._getAnnotationStatus()
 
@@ -95,7 +107,7 @@ class ProtAnnotateMembranes(ProtTomoPicking):
 
     def _genOutputSetOfTomoMasks(self):
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='annotated')
-        inTomoSet = self.inputTomograms.get()
+        inTomoSet = self.inputTomoMasks.get()
         tomoMaskSet.copyInfo(inTomoSet)
         counter = 1
         for inTomo in inTomoSet.iterItems():
