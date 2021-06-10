@@ -30,8 +30,9 @@ from pyworkflow.object import Integer
 from pyworkflow.protocol import PointerParam
 from pyworkflow.utils import removeBaseExt
 from tomo.objects import SetOfTomoMasks, TomoMask
-from tomosegmemtv.viewers.memb_annotator_tomo_viewer import MembAnnotatorDialog
-from tomosegmemtv.viewers.memb_annotator_tree import MembAnnotatorProvider
+
+from tomosegmemtv.viewers_interactive.memb_annotator_tomo_viewer import MembAnnotatorDialog
+from tomosegmemtv.viewers_interactive.memb_annotator_tree import MembAnnotatorProvider
 
 
 class ProtAnnotateMembranes(EMProtocol):

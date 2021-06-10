@@ -23,4 +23,4 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from tomosegmemtv.viewers.viewers_data import Tomo3D4TomoSegMemDataViewer
+
