@@ -23,4 +23,29 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from tomosegmemtv.viewers.viewers_data import Tomo3D4TomoSegMemDataViewer
+from pyworkflow.gui.dialog import ToolbarListDialog
+from tomo3D.viewers.viewer_mrc import MrcPlot
+from tomo3D.viewers.viewer_triangulations import guiThread
+
+
+class AnnotatedVesicleViewerDialog(ToolbarListDialog):
+    """
+    This class allows to  call a MembraneAnnotator subprocess from a list of Tomograms.
+    """
+
+    def __init__(self, parent, **kwargs):
+        self.provider = kwargs.get("provider", None)
+        ToolbarListDialog.__init__(self, parent,
+                                   "Annotated Vesicle Object Manager",
+                                   allowsEmptySelection=False,
+                                   itemDoubleClick=self.launchAnnotationViewer,
+                                   allowSelect=False,
+                                   **kwargs)
+
+    @staticmethod
+    def launchAnnotationViewer(tomoMask):
+        print("\n==> Running Annotated Vesicle Viewer:")
+        materialsName = tomoMask.getFileName()
+        tomoName = tomoMask.getVolName()
+        args = {'tomo_mrc': tomoName, 'mask_mrc': materialsName}
+        guiThread(MrcPlot, 'initializePlot', **args)

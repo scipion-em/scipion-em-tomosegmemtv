@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 # **************************************************************************
 # *
 # * Authors:     Scipion Team
 # *
-# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# * your institution
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -20,7 +21,21 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'scipion@cnb.csic.es'
+# *  e-mail address 'you@yourinstitution.email'
 # *
 # **************************************************************************
-from tomosegmemtv.viewers.viewers_data import Tomo3D4TomoSegMemDataViewer
+from os.path import join, isfile
+
+from pyworkflow.utils import removeBaseExt
+from tomo.viewers.views_tkinter_tree import TomogramsTreeProvider
+
+
+class MembAnnotatorResultsProvider(TomogramsTreeProvider):
+
+    def getObjectInfo(self, inTomo):
+        tomogramName = removeBaseExt(inTomo.getVolName()) + "_materials.mrc"
+
+        return {'key': tomogramName, 'parent': None}
+
+    def getColumns(self):
+        return [('TomoMasks (annotations)', 300)]
