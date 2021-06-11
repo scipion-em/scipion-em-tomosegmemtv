@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 # **************************************************************************
 # *
 # * Authors:     Scipion Team
 # *
-# *  BCU, Centro Nacional de Biotecnologia, CSIC
+# * your institution
 # *
 # * This program is free software; you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License as published by
@@ -20,11 +21,29 @@
 # * 02111-1307  USA
 # *
 # *  All comments concerning this program package may be sent to the
-# *  e-mail address 'scipion@cnb.csic.es'
+# *  e-mail address 'you@yourinstitution.email'
 # *
 # **************************************************************************
+from os.path import join, isfile
 
-from .protocol_tensor_voting import ProtTomoSegmenTVTensorVoting
-from .protocol_membrane_delineation import ProtTomoSegmenTVDelineation
-from .protocol_membrane_density_thresholding import ProtTomoSegmenTVDensityTh
-from .protocol_membrane_size_thresholding import ProtTomoSegmenTVSizeTh
+from pyworkflow.utils import removeBaseExt
+from tomo.viewers.views_tkinter_tree import TomogramsTreeProvider
+
+
+class MembAnnotatorProvider(TomogramsTreeProvider):
+
+    def getObjectInfo(self, inTomo):
+        tomogramName = removeBaseExt(inTomo.getVolName())
+        filePath = join(self._path, tomogramName + "_materials.mrc")
+
+        if not isfile(filePath):
+            return {'key': tomogramName, 'parent': None,
+                    'text': tomogramName, 'values': "PENDING",
+                    'tags': "pending"}
+        else:
+            return {'key': tomogramName, 'parent': None,
+                    'text': tomogramName, 'values': "DONE",
+                    'tags': "done"}
+
+    def getColumns(self):
+        return [('TomoMasks (segmentations)', 300), ('status', 150)]
