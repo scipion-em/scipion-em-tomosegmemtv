@@ -17,7 +17,7 @@ instant download access. Download the standalone version (which will be a zip fi
 
 .. code-block::
 
-    unzip DOWNLOADED/FILE -q -d SCIPION_HOME/software/em/TOMOSEGMEMB_DIRECTORY/tomosegmentv/
+    unzip DOWNLOADED/FILE -q -d SCIPION_HOME/software/em/TOMOSEGMEMB_DIRECTORY/tomoSegMemTV/
 
 - **Contact information:**
 
