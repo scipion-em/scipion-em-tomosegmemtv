@@ -36,7 +36,7 @@ from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV
     MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
 
 _references = ['MartinezSanchez2014']
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 _logo = "icon.png"
 
 
@@ -44,6 +44,7 @@ class Plugin(pwem.Plugin):
 
     _homeVar = TOMOSEGMEMTV_HOME
     _pathVars = [TOMOSEGMEMTV_HOME]
+    _url = "https://github.com/scipion-em/scipion-em-tomosegmemtv"
 
     @classmethod
     def _defineVariables(cls):
@@ -92,9 +93,13 @@ class Plugin(pwem.Plugin):
         protocol.runJob(cls.getHome(MEMBANNOTATOR_EM_DIR, 'application', MEMBANNOTATOR_BIN), arguments, env=env, cwd=cwd)
 
     @classmethod
+    def getProgram(cls, program):
+        return join(cls.getHome(TOMOSEGMEMTV, 'bin', program))
+
+    @classmethod
     def runTomoSegmenTV(cls, protocol, program, args, cwd=None):
         """ Run tomoSegmenTV command from a given protocol. """
-        protocol.runJob(join(cls.getHome(TOMOSEGMEMTV, 'bin', program)), args, cwd=cwd)
+        protocol.runJob( cls.getProgram(program), args, cwd=cwd)
 
     @classmethod
     def getMCRPath(cls):

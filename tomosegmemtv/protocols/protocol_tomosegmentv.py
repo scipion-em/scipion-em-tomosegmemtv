@@ -1,3 +1,4 @@
+import os
 from os import remove
 from os.path import abspath
 
@@ -8,6 +9,8 @@ from pyworkflow.utils import Message, removeBaseExt
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from tomosegmemtv import Plugin
+
+SCALE_SPACE = 'scale_space'
 
 MRC = '.mrc'
 
@@ -123,7 +126,7 @@ class ProtTomoSegmenTV(EMProtocol):
         tomoBaseName = removeBaseExt(tomoFile)
         # Scale space
         s2OutputFile = self._getExtraPath(tomoBaseName + S2 + MRC)
-        Plugin.runTomoSegmenTV(self, 'scale_space', self._getScaleSpaceCmd(tomoFile, s2OutputFile))
+        Plugin.runTomoSegmenTV(self, SCALE_SPACE, self._getScaleSpaceCmd(tomoFile, s2OutputFile))
         # Tensor voting
         tVOutputFile = self._getExtraPath(tomoBaseName + TV + MRC)
         Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(s2OutputFile, tVOutputFile))
@@ -170,6 +173,10 @@ class ProtTomoSegmenTV(EMProtocol):
     def _summary(self):
         summary = []
         return summary
+
+    def _validate(self):
+        if not os.path.exists(Plugin.getProgram(SCALE_SPACE)):
+            return ["TomoSegMemTV does not seem installed. Please go to %s for instructions." % Plugin.getUrl()]
 
     # --------------------------- UTIL functions -----------------------------------
 
