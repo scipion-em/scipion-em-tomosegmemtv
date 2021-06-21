@@ -40,6 +40,6 @@ setup(
         'pyworkflow.plugin': 'tomosegmemtv = tomosegmemtv'
     },
     package_data={  # Optional
-       'tomosegmemtv': ['protocols.conf'],
+       'tomosegmemtv': ['protocols.conf', 'icon.png'],
     }
 )
