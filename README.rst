@@ -9,14 +9,6 @@ Scipion plugin for segmentation and annotation of membranes (with tomoSegmenTV a
 Setup
 =====
 
-- **Install this plugin in devel mode:**
-
-Using the command line:
-
-.. code-block::
-
-    scipion3 installp -p local/path/to/scipion-em-tomosegmembtv --devel
-
 - **Getting the binaries for tomoSegmenTV:**
 
 TomoSegmenTV binaries must be downloaded from the following site
@@ -25,7 +17,7 @@ instant download access. Download the standalone version (which will be a zip fi
 
 .. code-block::
 
-    unzip DOWNLOADED/FILE -q -d SCIPION_HOME/software/em/TOMOSEGMEMB_DIRECTORY/tomosegmentv/
+    unzip DOWNLOADED/FILE -d SCIPION_HOME/software/em/TOMOSEGMEMB_DIRECTORY/tomoSegMemTV/
 
 - **Contact information:**
 
@@ -35,5 +27,15 @@ If you experiment any problem, please contact us here: scipion-users@lists.sourc
 We'll be pleased to help.
 
 *Scipion Team*
+
+- **Install this plugin in devel mode (for developers):**
+
+Using the command line:
+
+.. code-block::
+
+    scipion3 installp -p local/path/to/scipion-em-tomosegmembtv --devel
+
+
 
 
