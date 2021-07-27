@@ -30,3 +30,8 @@ DataSet(name='tomosegmemtv', folder='tomosegmemtv',
         files={
                'tomogram': 'emd_1155i.mrc'
         })
+
+DataSet(name='pyseg', folder='pyseg',
+        files={
+            'presegTomo': 'Pertuzumab_1_defocus_25um_tomo_7_aliSIRT_EED.mrc'
+        })
