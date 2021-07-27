@@ -118,9 +118,9 @@ class ProtTomoSegmenTV(EMProtocol):
 
     def _insertAllSteps(self):
         for tomo in self.inTomograms.get():
-            self._insertFunctionStep('runTomoSegmenTV', tomo.getFileName())
+            self._insertFunctionStep(self.runTomoSegmenTV, tomo.getFileName())
 
-        self._insertFunctionStep('createOutputStep')
+        self._insertFunctionStep(self.createOutputStep)
 
     def runTomoSegmenTV(self, tomoFile):
         tomoBaseName = removeBaseExt(tomoFile)

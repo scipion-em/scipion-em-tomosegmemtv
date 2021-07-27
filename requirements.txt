@@ -1,1 +1,3 @@
 scipion-em-tomo3D
+mrcfile
+scipy
