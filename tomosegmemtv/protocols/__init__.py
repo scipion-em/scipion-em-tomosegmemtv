@@ -25,3 +25,4 @@
 # **************************************************************************
 from .protocol_annotate_membranes import ProtAnnotateMembranes
 from .protocol_tomosegmentv import ProtTomoSegmenTV
+from .protocol_resize_tomomask import ProtResizeSegmentedVolume

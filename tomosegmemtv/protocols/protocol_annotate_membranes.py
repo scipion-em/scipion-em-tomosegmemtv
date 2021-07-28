@@ -60,7 +60,7 @@ class ProtAnnotateMembranes(EMProtocol):
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._initialize()
-        self._insertFunctionStep('runMembraneAnnotator', interactive=True)
+        self._insertFunctionStep(self.runMembraneAnnotator, interactive=True)
 
     # --------------------------- STEPS functions -----------------------------
 
