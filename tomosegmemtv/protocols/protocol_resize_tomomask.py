@@ -7,8 +7,8 @@ import numpy as np
 from pwem.emlib.image import ImageHandler
 from pwem.protocols import EMProtocol
 from pyworkflow import BETA
-from pyworkflow.protocol import PointerParam, NumericListParam
-from pyworkflow.utils import Message, removeBaseExt, getExt, removeExt, getParentFolder
+from pyworkflow.protocol import PointerParam
+from pyworkflow.utils import Message, removeBaseExt, getExt, getParentFolder
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 
@@ -39,7 +39,8 @@ class ProtResizeSegmentedVolume(EMProtocol):
                            'of those tomograms.')
 
     def _insertAllSteps(self):
-        for tomoMask in self.inTomoMasks.get():
+        tomoList = [tomoMask.clone() for tomoMask in self.inTomoMasks.get()]
+        for tomoMask in tomoList:
             self._insertFunctionStep(self.resizeStep, tomoMask)
         self._insertFunctionStep(self.createOutputStep)
 
@@ -49,7 +50,7 @@ class ProtResizeSegmentedVolume(EMProtocol):
         x, y, z, _ = ih.getDimensions(tomoMask)
         nx, ny, nz, _ = ih.getDimensions(self.inTomos.get().getFirstItem())
         with mrcfile.open(fileName, permissive=True) as mrc:
-            originalMask = mrc.data
+            originalMask = np.round_(mrc.data)
 
         rx = nx / x
         ry = ny / y
