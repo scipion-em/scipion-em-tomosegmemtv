@@ -23,10 +23,13 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+from os import symlink
+from os.path import join, exists
+
 import pyworkflow.tests as pwtests
 from imod.protocols import ProtImodTomoNormalization
 from pwem.tests.workflows import TestWorkflow
-from pyworkflow.utils import magentaStr
+from pyworkflow.utils import magentaStr, removeBaseExt
 from tomo.protocols import ProtImportTomograms
 from tomosegmemtv.protocols import ProtTomoSegmenTV, ProtResizeSegmentedVolume
 
@@ -40,16 +43,22 @@ class TestResizeTomoMask(TestWorkflow):
         pwtests.setupTestProject(cls)
         ds = pwtests.DataSet.getDataSet('pyseg')
         cls.ds = ds
-        cls.setSize = 1
+        cls.setSize = 2
         cls.samplingRate = 6.87
         cls.resizedDim = tuple([inDim / cls.binning for inDim in cls.origDim])
+        # Because only one tomogram is contained in the used dataset, 2 links will be created pointing to the same
+        # file, so they can be interpreted as a set of two tomograms, making the test complexity closer to the real
+        # usage
+        cls.virtualTomos = ['vTomo1', 'vTomo2']
+        virtualTomos = [join(ds.getPath(), fpath + '.mrc') for fpath in cls.virtualTomos]
+        [symlink(ds.getFile('presegTomo'), virtualTomo) for virtualTomo in virtualTomos if not exists(virtualTomo)]
 
     def _importTomograms(self):
         print(magentaStr("\n==> Importing the tomograms"))
         protImportTomo = self.newProtocol(
             ProtImportTomograms,
             filesPath=self.ds.getPath(),
-            filesPattern=self.ds.getFile('presegTomo'),
+            filesPattern='vTomo*.mrc',
             samplingRate=self.samplingRate
         )
         protImportTomo = self.launchProtocol(protImportTomo)
@@ -112,6 +121,10 @@ class TestResizeTomoMask(TestWorkflow):
         self.assertSetSize(tomoMaskSet, size=self.setSize)
         self.assertEqual(tomoMaskSet.getSamplingRate(), self.samplingRate)
         self.assertEqual(tomoMaskSet.getDim(), self.origDim)
+
+        # Check generated files
+        for file in self.virtualTomos:
+            self.assertTrue(exists(protResizeTomoMask._getExtraPath(removeBaseExt(file) + '_flt.mrc')))
 
     def testResizeTomoMask(self):
         protImportTomo = self._importTomograms()
