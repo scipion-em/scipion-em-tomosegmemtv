@@ -104,7 +104,7 @@ class ProtAnnotateMembranes(EMProtocol):
 
     def _getCurrentTomoMaskFile(self, inTomoFile):
         baseName = removeBaseExt(inTomoFile)
-        return glob.glob(self._getExtraPath(baseName + '*_materials.mrc'))[0]
+        return glob.glob(self._getExtraPath(baseName + '_materials.mrc'))[0]
 
     def _genOutputSetOfTomoMasks(self):
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='annotated')
