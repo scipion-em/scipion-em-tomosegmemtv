@@ -36,7 +36,7 @@ from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV
     MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
 
 _references = ['MartinezSanchez2014']
-__version__ = '3.0.2'
+__version__ = '3.0.3'
 _logo = "icon.png"
 
 
