@@ -32,7 +32,7 @@ from tomosegmemtv.viewers.annotation_results_viewer import AnnotatedVesicleViewe
 from tomosegmemtv.viewers.memb_annotator_results_tree import MembAnnotatorResultsProvider
 
 
-class Tomo3D4TomoSegMemDataViewer(pwviewer.Viewer):
+class TomoViz4TomoSegMemDataViewer(pwviewer.Viewer):
     """ Wrapper to visualize different type of objects
     using pyvista
     """
