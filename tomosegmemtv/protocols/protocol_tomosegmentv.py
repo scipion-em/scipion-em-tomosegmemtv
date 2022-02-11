@@ -170,9 +170,10 @@ class ProtTomoSegmenTV(EMProtocol):
         counter = 1
         for file, inTomo in zip(tomoMaskList, inTomoSet):
             tomoMask = TomoMask()
+            fn = inTomo.getFileName()
             tomoMask.copyInfo(inTomo)
             tomoMask.setLocation((counter, file))
-            tomoMask.setVolName(inTomo.getFileName())
+            tomoMask.setVolName(self._getExtraPath(replaceBaseExt(fn, 'mrc')))
             tomoMaskSet.append(tomoMask)
             counter += 1
 
