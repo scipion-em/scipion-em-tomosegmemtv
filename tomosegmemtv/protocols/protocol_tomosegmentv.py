@@ -2,10 +2,11 @@ import os
 from os import remove
 from os.path import abspath
 
+from pwem.emlib.image import ImageHandler
 from pwem.protocols import EMProtocol
 from pyworkflow import BETA
 from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED
-from pyworkflow.utils import Message, removeBaseExt
+from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from tomosegmemtv import Plugin
@@ -117,13 +118,26 @@ class ProtTomoSegmenTV(EMProtocol):
                       )
 
     def _insertAllSteps(self):
+        self._insertFunctionStep(self.convertInputStep)
         for tomo in self.inTomograms.get():
             self._insertFunctionStep(self.runTomoSegmenTV, tomo.getFileName())
 
         self._insertFunctionStep(self.createOutputStep)
 
+    def convertInputStep(self):
+        # Convert the tomomask files if they are not .mrc
+        ih = ImageHandler()
+        for tomo in self.inTomograms.get():
+            fn = tomo.getFileName()
+            newFn = self._getExtraPath(replaceBaseExt(fn, 'mrc'))
+            if fn.endswith('.mrc'):
+                createLink(fn, newFn)
+            else:
+                ih.convert(fn, newFn)
+
     def runTomoSegmenTV(self, tomoFile):
         tomoBaseName = removeBaseExt(tomoFile)
+        tomoFile = self._getExtraPath(tomoBaseName + '.mrc')
         # Scale space
         s2OutputFile = self._getExtraPath(tomoBaseName + S2 + MRC)
         Plugin.runTomoSegmenTV(self, SCALE_SPACE, self._getScaleSpaceCmd(tomoFile, s2OutputFile))

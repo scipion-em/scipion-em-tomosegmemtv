@@ -23,7 +23,6 @@
 # *
 # **************************************************************************
 import glob
-
 from pwem.protocols import EMProtocol
 from pyworkflow import BETA
 from pyworkflow.object import Integer
@@ -63,7 +62,6 @@ class ProtAnnotateMembranes(EMProtocol):
         self._insertFunctionStep(self.runMembraneAnnotator, interactive=True)
 
     # --------------------------- STEPS functions -----------------------------
-
     def runMembraneAnnotator(self):
         # There are still some objects which haven't been annotated --> launch GUI
         self._getAnnotationStatus()
@@ -111,7 +109,7 @@ class ProtAnnotateMembranes(EMProtocol):
         inTomoSet = self.inputTomoMasks.get()
         tomoMaskSet.copyInfo(inTomoSet)
         counter = 1
-        for inTomo in inTomoSet.iterItems():
+        for inTomo in inTomoSet:
             tomoMask = TomoMask()
             inTomoFile = inTomo.getVolName()
             tomoMask.copyInfo(inTomo)
