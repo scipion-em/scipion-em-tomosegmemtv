@@ -126,14 +126,10 @@ class ProtTomoSegmenTV(EMProtocol):
 
     def convertInputStep(self):
         # Convert the tomomask files if they are not .mrc
-        ih = ImageHandler()
         for tomo in self.inTomograms.get():
             fn = tomo.getFileName()
             newFn = self._getExtraPath(replaceBaseExt(fn, 'mrc'))
-            if fn.endswith('.mrc'):
-                createLink(fn, newFn)
-            else:
-                ih.convert(fn, newFn)
+            createLink(fn, newFn)
 
     def runTomoSegmenTV(self, tomoFile):
         tomoBaseName = removeBaseExt(tomoFile)
