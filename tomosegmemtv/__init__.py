@@ -60,7 +60,8 @@ class Plugin(pwem.Plugin):
         environ.update({'LD_LIBRARY_PATH': os.pathsep.join([join(runtimePath, 'runtime', 'glnxa64'),
                                                             join(runtimePath, 'bin', 'glnxa64'),
                                                             join(runtimePath, 'sys', 'os', 'glnxa64'),
-                                                            join(runtimePath, 'sys', 'opengl', 'lib', 'glnxa64')])
+                                                            join(runtimePath, 'sys', 'opengl', 'lib', 'glnxa64')]),
+                        'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')
                         })
         return environ
 
