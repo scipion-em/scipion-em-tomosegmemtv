@@ -66,7 +66,7 @@ class Plugin(pwem.Plugin):
         # centOS distro requires an additional environment variable. However, the platform module does not contain the
         # word or rhel or similar, but ubuntu does. Thus, for the moment, this will be simplified checking only if the
         # distro is ubuntu or not
-        if 'ubuntu' not in platform.version().lower:
+        if 'ubuntu' not in platform.version().lower():
             environ.update({'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')})
         return environ
 
