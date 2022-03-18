@@ -23,6 +23,7 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+import platform
 import string
 from os.path import join, exists
 from random import choices
@@ -60,9 +61,13 @@ class Plugin(pwem.Plugin):
         environ.update({'LD_LIBRARY_PATH': os.pathsep.join([join(runtimePath, 'runtime', 'glnxa64'),
                                                             join(runtimePath, 'bin', 'glnxa64'),
                                                             join(runtimePath, 'sys', 'os', 'glnxa64'),
-                                                            join(runtimePath, 'sys', 'opengl', 'lib', 'glnxa64')]),
-                        'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')
+                                                            join(runtimePath, 'sys', 'opengl', 'lib', 'glnxa64')])
                         })
+        # centOS distro requires an additional environment variable. However, the platform module does not contain the
+        # word or rhel or similar, but ubuntu does. Thus, for the moment, this will be simplified checking only if the
+        # distro is ubuntu or not
+        if 'ubuntu' not in platform.version().lower:
+            environ.update({'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')})
         return environ
 
     @classmethod
