@@ -31,6 +31,7 @@ from pyworkflow.utils import magentaStr, removeBaseExt, createLink
 from tomo.protocols import ProtImportTomograms
 
 from tomosegmemtv.protocols import ProtTomoSegmenTV
+from tomosegmemtv.protocols.protocol_tomosegmentv import outputObjects
 
 
 class TestTomosegmemTV(TestWorkflow):
@@ -77,7 +78,7 @@ class TestTomosegmemTV(TestWorkflow):
             blackOverWhite=False
         )
         protTomosegmemTV = self.launchProtocol(protTomosegmemTV)
-        tomoMaskSet = getattr(protTomosegmemTV, 'outputSetofTomoMasks', None)
+        tomoMaskSet = getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None)
 
         # Check output set
         self.assertSetSize(tomoMaskSet, size=2)

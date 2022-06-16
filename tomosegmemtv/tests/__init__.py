@@ -31,7 +31,7 @@ DataSet(name='tomosegmemtv', folder='tomosegmemtv',
                'tomogram': 'emd_1155i.mrc'
         })
 
-DataSet(name='pyseg', folder='pyseg',
+DataSet(name='emd_10439', folder='emd_10439',
         files={
-            'presegTomo': 'Pertuzumab_1_defocus_25um_tomo_7_aliSIRT_EED.mrc'
+            'annotatedTomomask': 'tomomasksAnnotated/emd_10439_materials.mrc'
         })
