@@ -216,7 +216,8 @@ class ProtTomoSegmenTV(EMProtocol):
 
     def _validate(self):
         if not os.path.exists(Plugin.getProgram(SCALE_SPACE)):
-            return ["TomoSegMemTV does not seem installed. Please go to %s for instructions." % Plugin.getUrl()]
+            return ["%s is not at %s. Review installation. Please go to %s for instructions." %
+                    (SCALE_SPACE, Plugin.getProgram(SCALE_SPACE),Plugin.getUrl())]
 
     # --------------------------- UTIL functions -----------------------------------
 
