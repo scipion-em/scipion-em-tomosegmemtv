@@ -27,6 +27,7 @@ from os import remove
 from os.path import join, exists
 import pyworkflow.tests as pwtests
 from imod.protocols import ProtImodTomoNormalization
+from imod.protocols.protocol_base import OUTPUT_TOMOGRAMS_NAME
 from pwem.tests.workflows import TestWorkflow
 from pyworkflow.utils import magentaStr, removeBaseExt, createLink
 from tomo.protocols import ProtImportTomograms
@@ -80,7 +81,7 @@ class TestResizeTomoMask(TestWorkflow):
 
         protNormalizeTomo = self.launchProtocol(protNormalizeTomo)
 
-        tomoSet = getattr(protNormalizeTomo, 'outputSetOfTomograms')
+        tomoSet = getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None)
         self.assertSetSize(tomoSet, size=self.setSize)
         self.assertTrue(abs(tomoSet.getSamplingRate() - self.binning * self.samplingRate) <= 0.001)
         self.assertEqual(tomoSet.getDim(), self.resizedDim)
@@ -91,7 +92,7 @@ class TestResizeTomoMask(TestWorkflow):
         print(magentaStr("\n==> Segmenting the membranes"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=getattr(protNormalizeTomo, 'outputSetOfTomograms', None),
+            inTomograms=getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None),
             mbThkPix=6,
             mbScaleFactor=15,
             blackOverWhite=True,
