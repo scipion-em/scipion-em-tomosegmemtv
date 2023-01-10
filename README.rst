@@ -85,8 +85,9 @@ References
 ==========
 
 * `Robust membrane detection based on tensor voting for electron tomography. <https://doi.org/10.1016/j.jsb.2014.02.015>`_
-A. Martinez-Sanchez, I. Garcia, S. Asano, V. Lucic, J.J. Fernandez.
-Journal of Structural Biology  186:49-61, 2014.
+
+    A. Martinez-Sanchez, I. Garcia, S. Asano, V. Lucic, J.J. Fernandez.
+    Journal of Structural Biology  186:49-61, 2014.
 
 ===================
 Contact information
