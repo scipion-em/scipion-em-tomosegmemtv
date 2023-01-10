@@ -26,13 +26,13 @@
 
 import pyworkflow.viewer as pwviewer
 import pwem.viewers.views as vi
-
+from tomo.objects import SetOfTomoMasks
 from tomosegmemtv.protocols import ProtAnnotateMembranes
 from tomosegmemtv.viewers.annotation_results_viewer import AnnotatedVesicleViewerDialog
 from tomosegmemtv.viewers.memb_annotator_results_tree import MembAnnotatorResultsProvider
 
 
-class Tomo3D4TomoSegMemDataViewer(pwviewer.Viewer):
+class TomoViz4TomoSegMemDataViewer(pwviewer.Viewer):
     """ Wrapper to visualize different type of objects
     using pyvista
     """
@@ -50,7 +50,12 @@ class Tomo3D4TomoSegMemDataViewer(pwviewer.Viewer):
     def _visualize(self, obj, **kwargs):
         views = []
         cls = type(obj)
-        tomoMaskList = [tomoMask.clone() for tomoMask in obj.outputSetofTomoMasks.iterItems()]
+
+        tomoMaskList = []
+        for name, output in obj.iterOutputAttributes(outputClass=SetOfTomoMasks):
+            for tomoMask in output.iterItems():
+                tomoMaskList.append(tomoMask.clone())
+
         vesicleProvider = MembAnnotatorResultsProvider(tomoMaskList, None, None)
 
         if issubclass(cls, ProtAnnotateMembranes):

@@ -24,8 +24,8 @@
 # *
 # **************************************************************************
 from pyworkflow.gui.dialog import ToolbarListDialog
-from tomo3D.viewers.viewer_mrc import MrcPlot
-from tomo3D.viewers.viewer_triangulations import guiThread
+from tomoviz.viewers.viewer_mrc import MrcPlot
+from tomoviz.viewers.viewer_triangulations import guiThread
 
 
 class AnnotatedVesicleViewerDialog(ToolbarListDialog):

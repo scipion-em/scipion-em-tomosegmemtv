@@ -23,6 +23,7 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+import platform
 import string
 from os.path import join, exists
 from random import choices
@@ -36,7 +37,7 @@ from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV
     MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
 
 _references = ['MartinezSanchez2014']
-__version__ = '3.0.3'
+__version__ = '3.1.0'
 _logo = "icon.png"
 
 
@@ -62,6 +63,11 @@ class Plugin(pwem.Plugin):
                                                             join(runtimePath, 'sys', 'os', 'glnxa64'),
                                                             join(runtimePath, 'sys', 'opengl', 'lib', 'glnxa64')])
                         })
+        # centOS distro requires an additional environment variable. However, the platform module does not contain the
+        # word or rhel or similar, but ubuntu does. Thus, for the moment, this will be simplified checking only if the
+        # distro is ubuntu or not
+        if 'ubuntu' not in platform.version().lower():
+            environ.update({'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')})
         return environ
 
     @classmethod

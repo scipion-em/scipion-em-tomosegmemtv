@@ -1,11 +1,35 @@
+# *
+# * Authors:     Scipion Team
+# *
+# * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+# *
+# * This program is free software; you can redistribute it and/or modify
+# * it under the terms of the GNU General Public License as published by
+# * the Free Software Foundation; either version 2 of the License, or
+# * (at your option) any later version.
+# *
+# * This program is distributed in the hope that it will be useful,
+# * but WITHOUT ANY WARRANTY; without even the implied warranty of
+# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# * GNU General Public License for more details.
+# *
+# * You should have received a copy of the GNU General Public License
+# * along with this program; if not, write to the Free Software
+# * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+# * 02111-1307  USA
+# *
+# *  All comments concerning this program package may be sent to the
+# *  e-mail address 'scipion-users@lists.sourceforge.net'
+# *
+# **************************************************************************
 import os
+from enum import Enum
 from os import remove
 from os.path import abspath
-
 from pwem.protocols import EMProtocol
 from pyworkflow import BETA
 from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED
-from pyworkflow.utils import Message, removeBaseExt
+from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from tomosegmemtv import Plugin
@@ -23,11 +47,16 @@ FLT = '_flt'
 SUFFiXES_2_REMOVE = [S2, TV, SURF, TV2]
 
 
+class outputObjects(Enum):
+    tomoMasks = SetOfTomoMasks
+
+
 class ProtTomoSegmenTV(EMProtocol):
     """Segment membranes in tomograms"""
 
     _label = 'tomogram segmentation'
     _devStatus = BETA
+    _possibleOutputs = outputObjects
     tomoMaskListDelineated = []
 
     def _defineParams(self, form):
@@ -117,13 +146,22 @@ class ProtTomoSegmenTV(EMProtocol):
                       )
 
     def _insertAllSteps(self):
+        self._insertFunctionStep(self.convertInputStep)
         for tomo in self.inTomograms.get():
             self._insertFunctionStep(self.runTomoSegmenTV, tomo.getFileName())
 
         self._insertFunctionStep(self.createOutputStep)
 
+    def convertInputStep(self):
+        # Convert the tomomask files if they are not .mrc
+        for tomo in self.inTomograms.get():
+            fn = tomo.getFileName()
+            newFn = self._getExtraPath(replaceBaseExt(fn, 'mrc'))
+            createLink(fn, newFn)
+
     def runTomoSegmenTV(self, tomoFile):
         tomoBaseName = removeBaseExt(tomoFile)
+        tomoFile = self._getExtraPath(tomoBaseName + '.mrc')
         # Scale space
         s2OutputFile = self._getExtraPath(tomoBaseName + S2 + MRC)
         Plugin.runTomoSegmenTV(self, SCALE_SPACE, self._getScaleSpaceCmd(tomoFile, s2OutputFile))
@@ -147,7 +185,8 @@ class ProtTomoSegmenTV(EMProtocol):
 
     def createOutputStep(self):
         labelledSet = self._genOutputSetOfTomoMasks(self.tomoMaskListDelineated, 'segmented')
-        self._defineOutputs(outputSetofTomoMasks=labelledSet)
+        self._defineOutputs(**{outputObjects.tomoMasks.name: labelledSet})
+        self._defineSourceRelation(self.inTomograms.get(), labelledSet)
 
     def _genOutputSetOfTomoMasks(self, tomoMaskList, suffix):
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix=suffix)
@@ -156,9 +195,10 @@ class ProtTomoSegmenTV(EMProtocol):
         counter = 1
         for file, inTomo in zip(tomoMaskList, inTomoSet):
             tomoMask = TomoMask()
+            fn = inTomo.getFileName()
             tomoMask.copyInfo(inTomo)
             tomoMask.setLocation((counter, file))
-            tomoMask.setVolName(inTomo.getFileName())
+            tomoMask.setVolName(self._getExtraPath(replaceBaseExt(fn, 'mrc')))
             tomoMaskSet.append(tomoMask)
             counter += 1
 
@@ -176,7 +216,8 @@ class ProtTomoSegmenTV(EMProtocol):
 
     def _validate(self):
         if not os.path.exists(Plugin.getProgram(SCALE_SPACE)):
-            return ["TomoSegMemTV does not seem installed. Please go to %s for instructions." % Plugin.getUrl()]
+            return ["%s is not at %s. Review installation. Please go to %s for instructions." %
+                    (SCALE_SPACE, Plugin.getProgram(SCALE_SPACE),Plugin.getUrl())]
 
     # --------------------------- UTIL functions -----------------------------------
 

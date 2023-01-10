@@ -23,35 +23,37 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from os import symlink
+from os import remove
 from os.path import join, exists
-
 import pyworkflow.tests as pwtests
 from imod.protocols import ProtImodTomoNormalization
+from imod.protocols.protocol_base import OUTPUT_TOMOGRAMS_NAME
 from pwem.tests.workflows import TestWorkflow
-from pyworkflow.utils import magentaStr, removeBaseExt
+from pyworkflow.utils import magentaStr, removeBaseExt, createLink
 from tomo.protocols import ProtImportTomograms
 from tomosegmemtv.protocols import ProtTomoSegmenTV, ProtResizeSegmentedVolume
+from tomosegmemtv.protocols.protocol_resize_tomomask import outputObjects
 
 
 class TestResizeTomoMask(TestWorkflow):
-    origDim = (1024, 1440, 300)
+    origDim = (464, 464, 250)
     binning = 2
 
     @classmethod
     def setUpClass(cls):
         pwtests.setupTestProject(cls)
-        ds = pwtests.DataSet.getDataSet('pyseg')
+        ds = pwtests.DataSet.getDataSet('emd_10439')
         cls.ds = ds
         cls.setSize = 2
-        cls.samplingRate = 6.87
+        cls.samplingRate = 13.68
         cls.resizedDim = tuple([inDim / cls.binning for inDim in cls.origDim])
         # Because only one tomogram is contained in the used dataset, 2 links will be created pointing to the same
         # file, so they can be interpreted as a set of two tomograms, making the test complexity closer to the real
         # usage
         cls.virtualTomos = ['vTomo1', 'vTomo2']
         virtualTomos = [join(ds.getPath(), fpath + '.mrc') for fpath in cls.virtualTomos]
-        [symlink(ds.getFile('presegTomo'), virtualTomo) for virtualTomo in virtualTomos if not exists(virtualTomo)]
+        [remove(sLink) for sLink in virtualTomos if exists(sLink)]  # Remove possible previous links
+        [createLink(ds.getFile('annotatedTomomask'), virtualTomo) for virtualTomo in virtualTomos]
 
     def _importTomograms(self):
         print(magentaStr("\n==> Importing the tomograms"))
@@ -79,7 +81,7 @@ class TestResizeTomoMask(TestWorkflow):
 
         protNormalizeTomo = self.launchProtocol(protNormalizeTomo)
 
-        tomoSet = getattr(protNormalizeTomo, 'outputNormalizedSetOfTomograms')
+        tomoSet = getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None)
         self.assertSetSize(tomoSet, size=self.setSize)
         self.assertTrue(abs(tomoSet.getSamplingRate() - self.binning * self.samplingRate) <= 0.001)
         self.assertEqual(tomoSet.getDim(), self.resizedDim)
@@ -90,7 +92,7 @@ class TestResizeTomoMask(TestWorkflow):
         print(magentaStr("\n==> Segmenting the membranes"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=getattr(protNormalizeTomo, 'outputNormalizedSetOfTomograms', None),
+            inTomograms=getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None),
             mbThkPix=6,
             mbScaleFactor=15,
             blackOverWhite=True,
@@ -98,7 +100,7 @@ class TestResizeTomoMask(TestWorkflow):
             sigmaS=0.5
         )
         protTomosegmemTV = self.launchProtocol(protTomosegmemTV)
-        tomoMaskSet = getattr(protTomosegmemTV, 'outputSetofTomoMasks', None)
+        tomoMaskSet = getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None)
 
         # Check output set
         self.assertSetSize(tomoMaskSet, size=self.setSize)
@@ -111,11 +113,11 @@ class TestResizeTomoMask(TestWorkflow):
         print(magentaStr("\n==> Resizing the tomomasks to the size of the imported tomograms"))
         protResizeTomoMask = self.newProtocol(
             ProtResizeSegmentedVolume,
-            inTomoMasks=getattr(protTomosegmemTV, 'outputSetofTomoMasks', None),
+            inTomoMasks=getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None),
             inTomos=getattr(protImportTomo, 'outputTomograms', None)
         )
         protResizeTomoMask = self.launchProtocol(protResizeTomoMask)
-        tomoMaskSet = getattr(protResizeTomoMask, 'outputSetofTomoMasks', None)
+        tomoMaskSet = getattr(protResizeTomoMask, outputObjects.tomoMasks.name, None)
 
         # Check output set
         self.assertSetSize(tomoMaskSet, size=self.setSize)

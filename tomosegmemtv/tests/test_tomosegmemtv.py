@@ -23,15 +23,15 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from os import symlink, remove
 from os.path import join, exists
 
 import pyworkflow.tests as pwtests
 from pwem.tests.workflows import TestWorkflow
-from pyworkflow.utils import magentaStr, removeBaseExt
+from pyworkflow.utils import magentaStr, removeBaseExt, createLink
 from tomo.protocols import ProtImportTomograms
 
 from tomosegmemtv.protocols import ProtTomoSegmenTV
+from tomosegmemtv.protocols.protocol_tomosegmentv import outputObjects
 
 
 class TestTomosegmemTV(TestWorkflow):
@@ -48,7 +48,7 @@ class TestTomosegmemTV(TestWorkflow):
         # they can be interpreted as a set of two tomograms, making the test complexity closer to the real usage
         cls.virtualTomos = ['vTomo1', 'vTomo2']
         virtualTomos = [join(ds.getPath(), fpath + '.mrc') for fpath in cls.virtualTomos]
-        [symlink(ds.getFile('tomogram'), virtualTomo) for virtualTomo in virtualTomos if not exists(virtualTomo)]
+        [createLink(ds.getFile('tomogram'), virtualTomo) for virtualTomo in virtualTomos]
 
     def _importTomograms(self):
         print(magentaStr("\n==> Importing data - tomograms:"))
@@ -78,7 +78,7 @@ class TestTomosegmemTV(TestWorkflow):
             blackOverWhite=False
         )
         protTomosegmemTV = self.launchProtocol(protTomosegmemTV)
-        tomoMaskSet = getattr(protTomosegmemTV, 'outputSetofTomoMasks', None)
+        tomoMaskSet = getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None)
 
         # Check output set
         self.assertSetSize(tomoMaskSet, size=2)

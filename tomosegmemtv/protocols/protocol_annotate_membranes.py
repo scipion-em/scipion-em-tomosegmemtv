@@ -23,6 +23,7 @@
 # *
 # **************************************************************************
 import glob
+from enum import Enum
 
 from pwem.protocols import EMProtocol
 from pyworkflow import BETA
@@ -35,11 +36,16 @@ from tomosegmemtv.viewers_interactive.memb_annotator_tomo_viewer import MembAnno
 from tomosegmemtv.viewers_interactive.memb_annotator_tree import MembAnnotatorProvider
 
 
+class outputObjects(Enum):
+    tomoMasks = SetOfTomoMasks
+
+
 class ProtAnnotateMembranes(EMProtocol):
     """ Manual annotation tool for segmented membranes
     """
     _label = 'annotate segmented membranes'
     _devStatus = BETA
+    _possibleOutputs = outputObjects
 
     def __init__(self, **kwargs):
         EMProtocol.__init__(self, **kwargs)
@@ -63,7 +69,6 @@ class ProtAnnotateMembranes(EMProtocol):
         self._insertFunctionStep(self.runMembraneAnnotator, interactive=True)
 
     # --------------------------- STEPS functions -----------------------------
-
     def runMembraneAnnotator(self):
         # There are still some objects which haven't been annotated --> launch GUI
         self._getAnnotationStatus()
@@ -75,7 +80,8 @@ class ProtAnnotateMembranes(EMProtocol):
         if self._objectsToGo.get() == 0:
             print("\n==> Generating the outputs")
             labelledSet = self._genOutputSetOfTomoMasks()
-            self._defineOutputs(outputSetofTomoMasks=labelledSet)
+            self._defineOutputs(**{outputObjects.tomoMasks.name: labelledSet})
+            self._defineSourceRelation(self.inputTomoMasks.get(), labelledSet)
 
         self._store()
 
@@ -111,7 +117,7 @@ class ProtAnnotateMembranes(EMProtocol):
         inTomoSet = self.inputTomoMasks.get()
         tomoMaskSet.copyInfo(inTomoSet)
         counter = 1
-        for inTomo in inTomoSet.iterItems():
+        for inTomo in inTomoSet:
             tomoMask = TomoMask()
             inTomoFile = inTomo.getVolName()
             tomoMask.copyInfo(inTomo)
