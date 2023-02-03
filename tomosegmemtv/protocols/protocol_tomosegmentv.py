@@ -145,7 +145,7 @@ class ProtTomoSegmenTV(EMProtocol):
                            '   - Saliency --> *filename%s.mrc*' % (S2, TV, SURF, TV2, FLT)
                       )
 
-        form.addParallelSection(threads=8)
+        form.addParallelSection(threads=8, mpi =1)
 
     def _insertAllSteps(self):
         self._insertFunctionStep(self.convertInputStep)
