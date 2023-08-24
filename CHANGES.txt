@@ -1,2 +1,4 @@
+v3.1.1:
+  - TomosegmemTV binaries are now downloaded directly. Thanks to José Jesús Fernández <JJ.Fernandez@csic.es>.
 v3.1.0:
-  - First plugin release
+  - First plugin release.

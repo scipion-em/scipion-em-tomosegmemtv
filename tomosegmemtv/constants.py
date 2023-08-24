@@ -24,13 +24,9 @@
 # *  e-mail address 'you@yourinstitution.email'
 # *
 # **************************************************************************
-from os.path import join
-
 TOMOSEGMEMTV = 'tomoSegMemTV'
 TOMOSEGMEMTV_HOME = 'TOMOSEGMEMTV_HOME'
-TOMOSEGMEMTV_DEFAULT_VERSION = '1.0.0'
-TOMOSEGMEMTV_EM_DIR = TOMOSEGMEMTV + '-' + TOMOSEGMEMTV_DEFAULT_VERSION
-TOMOSEGMEMTV_DIR = join(TOMOSEGMEMTV_EM_DIR, TOMOSEGMEMTV)
+TOMOSEGMEMTV_DL_URL = 'http://tiny.cc/vvu7vz'
 
 MEMBANNOTATOR = 'membraneAnnotator'
 MEMBANNOTATOR_BIN = 'MembraneAnnotator'
