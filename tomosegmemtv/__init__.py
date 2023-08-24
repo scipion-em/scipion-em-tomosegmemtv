@@ -112,7 +112,7 @@ class Plugin(pwem.Plugin):
         membraneAnnotatorTar = join(pwem.Config.EM_ROOT, cls._getMembraneAnnotatorTGZ())
         installationCmd = 'mkdir %s && cd .. && ' % membraneAnnotatorHome
         if not exists(membraneAnnotatorTar):
-            installationCmd += 'wget %s --no-check-certificate && ' % cls._getMembraneAnnotatorDownloadUrl()
+            installationCmd += 'wget %s && ' % cls._getMembraneAnnotatorDownloadUrl()
         installationCmd += 'mkdir %s && ' % tmpDest
         installationCmd += 'tar zxf %s -C %s && ' % (membraneAnnotatorTar, tmpDest)
         installationCmd += '%s/%s.install -mode silent -agreeToLicense yes -destinationFolder %s && ' % \
