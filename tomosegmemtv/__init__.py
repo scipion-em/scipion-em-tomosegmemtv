@@ -31,7 +31,7 @@ import pwem
 import os
 from pyworkflow.utils import Environ
 from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, MEMBANNOTATOR, \
-    MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, MEMBANNOTATOR_BIN, TOMOSEGMEMTV_DL_URL
+    MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, MEMBANNOTATOR_BIN, TOMOSEGMEMTV_DL_URL, TOMOSEGMEMTV_VERSION
 
 _references = ['MartinezSanchez2014']
 __version__ = '3.1.1'
@@ -46,7 +46,7 @@ class Plugin(pwem.Plugin):
 
     @classmethod
     def _defineVariables(cls):
-        cls._defineEmVar(TOMOSEGMEMTV_HOME, TOMOSEGMEMTV)
+        cls._defineEmVar(TOMOSEGMEMTV_HOME, TOMOSEGMEMTV + '-' + TOMOSEGMEMTV_VERSION)
 
     @classmethod
     def getMembSegEnviron(cls):
@@ -72,18 +72,19 @@ class Plugin(pwem.Plugin):
         TOMOSEGMEMTV_INSTALLED = '%s_installed' % TOMOSEGMEMTV
         # At this point of the installation execution cls.getHome() is None, so the em path should be provided
         pluginHome = join(pwem.Config.EM_ROOT, TOMOSEGMEMTV)
-        tomosegmemtvHome = join(pluginHome, TOMOSEGMEMTV)
-        membraneAnnotatorHome = join(pluginHome, MEMBANNOTATOR_EM_DIR)
+        tomosegmemtvHome = cls.getHome(TOMOSEGMEMTV)
+        membraneAnnotatorHome = cls.getHome(MEMBANNOTATOR_EM_DIR)
         dlZipFile = TOMOSEGMEMTV + '.zip'
-        # Membrane Annotator
-        installationCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
         # TomoSegMemTV
-        installationCmd += 'wget %s -O %s && ' % (TOMOSEGMEMTV_DL_URL, dlZipFile)
+        installationCmd = 'wget %s -O %s && ' % (TOMOSEGMEMTV_DL_URL, dlZipFile)
         installationCmd += 'mkdir %s && ' % tomosegmemtvHome
-        installationCmd += 'unzip %s -d %s && ' % (join(pwem.Config.EM_ROOT, dlZipFile), tomosegmemtvHome)
-        installationCmd += 'cd %s && ' % pluginHome
+        installationCmd += 'mkdir %s && ' % membraneAnnotatorHome
+        installationCmd += 'unzip %s -d %s && ' % (cls.getHome(dlZipFile), tomosegmemtvHome)
+        # Membrane Annotator
+        installationCmd += cls._genMembAnnCmd(membraneAnnotatorHome)
         installationCmd += 'touch %s' % TOMOSEGMEMTV_INSTALLED  # Flag installation finished
         env.addPackage(TOMOSEGMEMTV,
+                       version=TOMOSEGMEMTV_VERSION,
                        tar='void.tgz',
                        commands=[(installationCmd, TOMOSEGMEMTV_INSTALLED)],
                        neededProgs=["wget", "tar"],
@@ -110,9 +111,9 @@ class Plugin(pwem.Plugin):
     def _genMembAnnCmd(cls, membraneAnnotatorHome):
         tmpDest = Plugin._genTmpDest()
         membraneAnnotatorTar = join(pwem.Config.EM_ROOT, cls._getMembraneAnnotatorTGZ())
-        installationCmd = 'mkdir %s && cd .. && ' % membraneAnnotatorHome
-        if not exists(membraneAnnotatorTar):
-            installationCmd += 'wget %s && ' % cls._getMembraneAnnotatorDownloadUrl()
+        # installationCmd = 'mkdir %s && ' % membraneAnnotatorHome
+        # if not exists(membraneAnnotatorTar):
+        installationCmd = 'wget %s && ' % cls._getMembraneAnnotatorDownloadUrl()
         installationCmd += 'mkdir %s && ' % tmpDest
         installationCmd += 'tar zxf %s -C %s && ' % (membraneAnnotatorTar, tmpDest)
         installationCmd += '%s/%s.install -mode silent -agreeToLicense yes -destinationFolder %s && ' % \
