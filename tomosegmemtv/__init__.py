@@ -25,7 +25,8 @@
 # **************************************************************************
 import platform
 import string
-from os.path import join, exists
+import tempfile
+from os.path import join
 from random import choices
 import pwem
 import os
