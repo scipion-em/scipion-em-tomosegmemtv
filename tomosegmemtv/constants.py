@@ -25,9 +25,10 @@
 # *
 # **************************************************************************
 TOMOSEGMEMTV = 'tomoSegMemTV'
-TOMOSEGMEMTV_HOME = 'TOMOSEGMEMTV_HOME'
+TOMOSEGMEMTV_HOME_VAR = 'TOMOSEGMEMTV_HOME'
 TOMOSEGMEMTV_DL_URL = 'http://tiny.cc/vvu7vz'
 TOMOSEGMEMTV_VERSION = '2023.08.24'
+TOMOSEGMEMTV_DEFAULT_HOME= TOMOSEGMEMTV +"-"+TOMOSEGMEMTV_VERSION
 
 MEMBANNOTATOR = 'membraneAnnotator'
 MEMBANNOTATOR_BIN = 'MembraneAnnotator'
