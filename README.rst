@@ -46,25 +46,6 @@ The plugin can be installed in user (stable) or developer (latest, may be unstab
 
     scipion3 installp -p local/path/to/scipion-em-tomosegmemtv --devel
 
-
-=====================================
-Getting the binaries for tomoSegmenTV
-=====================================
-
-TomoSegmenTV binaries must be downloaded from the following site
-https://sites.google.com/site/3demimageprocessing/tomosegmemtv, where a form must be filled and submitted to get
-instant download access. Download the standalone version (which will be a zip file), unzip it and move the binary file
-to the directory SCIPION_HOME/software/em/TOMOSEGMEMB_DIRECTORY/tomoSegMemTV/bin/. It can be directly done executing
-the following command on a terminal:
-
-.. code-block::
-
-    cd DOWNLOADED_FILE_DIRECTORY
-
-.. code-block::
-
-    unzip DOWNLOADED/FILE -d SCIPION_HOME/software/em/TOMOSEGMEM_DIRECTORY/tomoSegMemTV/bin/
-
 =========
 Protocols
 =========
