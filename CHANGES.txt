@@ -1,2 +1,4 @@
+v3.1.1:
+  - Installer updated: binaries are automatically downloaded now. Thanks to José Jesús Fernández.
 v3.1.0:
   - First plugin release

@@ -1,6 +1,22 @@
-==============================
-Scipion - TomoSegMemTV plugin
-==============================
+=====================================================
+Scipion plugin for TomoSegMemTV and MembraneAnnotator
+=====================================================
+
+.. image:: https://img.shields.io/pypi/v/scipion-em-tomosegmemtv.svg
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: PyPI release
+
+.. image:: https://img.shields.io/pypi/l/scipion-em-tomosegmemtv.svg
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: License
+
+.. image:: https://img.shields.io/pypi/pyversions/scipion-em-tomosegmemtv.svg
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: Supported Python versions
+
+.. image:: https://img.shields.io/pypi/dm/scipion-em-tomosegmemtv
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: Downloads
 
 Scipion plugin for segmentation and annotation of membranes in tomograms (with TomoSegmenTV_ and memb-annotator_,
 respectively)
