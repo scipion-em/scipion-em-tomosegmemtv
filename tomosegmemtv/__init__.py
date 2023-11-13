@@ -31,13 +31,13 @@ from random import choices
 import pwem
 import os
 
-from pyworkflow.utils import Environ
+from pyworkflow.utils import Environ, replaceExt
 
 from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV_DEFAULT_VERSION, MEMBANNOTATOR, \
     MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
 
 _references = ['MartinezSanchez2014']
-__version__ = '3.1.0'
+__version__ = '3.1.1'
 _logo = "icon.png"
 
 
@@ -45,7 +45,7 @@ class Plugin(pwem.Plugin):
 
     _homeVar = TOMOSEGMEMTV_HOME
     _pathVars = [TOMOSEGMEMTV_HOME]
-    _url = "https://github.com/scipion-em/scipion-em-tomosegmemtv"
+    _url = "https://sites.google.com/site/3demimageprocessing/tomosegmemtv"
 
     @classmethod
     def _defineVariables(cls):
@@ -76,20 +76,27 @@ class Plugin(pwem.Plugin):
         pluginHome = join(pwem.Config.EM_ROOT, TOMOSEGMEMTV_EM_DIR)
         tomoSegmenTVHome = join(pluginHome, TOMOSEGMEMTV)
         membraneAnnotatorHome = join(pluginHome, MEMBANNOTATOR_EM_DIR)
-        # membraneAnnotatorTar = join(pwem.Config.EM_ROOT, MEMBANNOTATOR_EM_DIR + '.tar.gz')
 
-        TOMOSEGMEMTV_INSTALLED = '%s_installed' % TOMOSEGMEMTV
+        pattern = '%s_installed'
+        TOMOSEGMEMTV_INSTALLED = pattern % TOMOSEGMEMTV
+        MEMBRANE_ANN_INSTALLED = pattern % MEMBANNOTATOR
 
-        # TomosegmenTV: only the directory will be generated, because the binaries must be downloaded manually from José
-        # Jesús website, filling a form
-        installationCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
-        installationCmd += 'mkdir %s && ' % tomoSegmenTVHome
-        installationCmd += 'cd %s && ' % pluginHome
-        installationCmd += 'touch %s' % TOMOSEGMEMTV_INSTALLED  # Flag installation finished
+        # Tomosegmemtv installation cmd
+        dlZipFileName = TOMOSEGMEMTV + '.zip'
+        tomosegmemtvInstallCmd = 'wget http://tiny.cc/vvu7vz -O %s && ' % dlZipFileName
+        tomosegmemtvInstallCmd += 'mkdir %s && ' % tomoSegmenTVHome
+        tomosegmemtvInstallCmd += 'unzip %s -d %s && ' % (dlZipFileName, tomoSegmenTVHome)
+        tomosegmemtvInstallCmd += 'touch %s' % TOMOSEGMEMTV_INSTALLED
+
+        # Membrane annotator installation cmd
+        membAnnInstallCmd = cls._genMembAnnCmd(membraneAnnotatorHome)
+        membAnnInstallCmd += 'cd %s && ' % pluginHome
+        membAnnInstallCmd += 'touch %s' % MEMBRANE_ANN_INSTALLED  # Flag installation finished
         env.addPackage(TOMOSEGMEMTV,
                        version=TOMOSEGMEMTV_DEFAULT_VERSION,
                        tar='void.tgz',
-                       commands=[(installationCmd, TOMOSEGMEMTV_INSTALLED)],
+                       commands=[(tomosegmemtvInstallCmd, TOMOSEGMEMTV_INSTALLED),
+                                 (membAnnInstallCmd, MEMBRANE_ANN_INSTALLED)],
                        neededProgs=["wget", "tar"],
                        default=True)
 
@@ -105,7 +112,7 @@ class Plugin(pwem.Plugin):
     @classmethod
     def runTomoSegmenTV(cls, protocol, program, args, cwd=None):
         """ Run tomoSegmenTV command from a given protocol. """
-        protocol.runJob( cls.getProgram(program), args, cwd=cwd)
+        protocol.runJob(cls.getProgram(program), args, cwd=cwd)
 
     @classmethod
     def getMCRPath(cls):

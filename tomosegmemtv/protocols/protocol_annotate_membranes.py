@@ -26,7 +26,6 @@ import glob
 from enum import Enum
 
 from pwem.protocols import EMProtocol
-from pyworkflow import BETA
 from pyworkflow.object import Integer
 from pyworkflow.protocol import PointerParam
 from pyworkflow.utils import removeBaseExt
@@ -44,7 +43,6 @@ class ProtAnnotateMembranes(EMProtocol):
     """ Manual annotation tool for segmented membranes
     """
     _label = 'annotate segmented membranes'
-    _devStatus = BETA
     _possibleOutputs = outputObjects
 
     def __init__(self, **kwargs):

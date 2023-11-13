@@ -27,7 +27,6 @@ from enum import Enum
 from os import remove
 from os.path import abspath
 from pwem.protocols import EMProtocol
-from pyworkflow import BETA
 from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED
 from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink
 from tomo.objects import SetOfTomoMasks, TomoMask
@@ -55,7 +54,6 @@ class ProtTomoSegmenTV(EMProtocol):
     """Segment membranes in tomograms"""
 
     _label = 'tomogram segmentation'
-    _devStatus = BETA
     _possibleOutputs = outputObjects
     tomoMaskListDelineated = []
 
