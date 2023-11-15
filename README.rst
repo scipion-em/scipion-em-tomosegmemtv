@@ -1,6 +1,22 @@
-==============================
-Scipion - TomoSegMemTV plugin
-==============================
+=====================================================
+Scipion plugin for TomoSegMemTV and MembraneAnnotator
+=====================================================
+
+.. image:: https://img.shields.io/pypi/v/scipion-em-tomosegmemtv.svg
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: PyPI release
+
+.. image:: https://img.shields.io/pypi/l/scipion-em-tomosegmemtv.svg
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: License
+
+.. image:: https://img.shields.io/pypi/pyversions/scipion-em-tomosegmemtv.svg
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: Supported Python versions
+
+.. image:: https://img.shields.io/pypi/dm/scipion-em-tomosegmemtv
+        :target: https://pypi.python.org/pypi/scipion-em-tomosegmemtv
+        :alt: Downloads
 
 Scipion plugin for segmentation and annotation of membranes in tomograms (with TomoSegmenTV_ and memb-annotator_,
 respectively)
@@ -29,25 +45,6 @@ The plugin can be installed in user (stable) or developer (latest, may be unstab
 .. code-block::
 
     scipion3 installp -p local/path/to/scipion-em-tomosegmemtv --devel
-
-
-=====================================
-Getting the binaries for tomoSegmenTV
-=====================================
-
-TomoSegmenTV binaries must be downloaded from the following site
-https://sites.google.com/site/3demimageprocessing/tomosegmemtv, where a form must be filled and submitted to get
-instant download access. Download the standalone version (which will be a zip file), unzip it and move the binary file
-to the directory SCIPION_HOME/software/em/TOMOSEGMEMB_DIRECTORY/tomoSegMemTV/bin/. It can be directly done executing
-the following command on a terminal:
-
-.. code-block::
-
-    cd DOWNLOADED_FILE_DIRECTORY
-
-.. code-block::
-
-    unzip DOWNLOADED/FILE -d SCIPION_HOME/software/em/TOMOSEGMEM_DIRECTORY/tomoSegMemTV/bin/
 
 =========
 Protocols

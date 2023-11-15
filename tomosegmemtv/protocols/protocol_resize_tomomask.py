@@ -31,7 +31,6 @@ from scipy.ndimage import zoom
 import numpy as np
 from pwem.emlib.image import ImageHandler
 from pwem.protocols import EMProtocol
-from pyworkflow import BETA
 from pyworkflow.protocol import PointerParam
 from pyworkflow.utils import Message, removeBaseExt, getExt, getParentFolder
 from tomo.objects import SetOfTomoMasks, TomoMask
@@ -45,7 +44,6 @@ class ProtResizeSegmentedVolume(EMProtocol):
     """Resize segmented volumes or annotated (TomoMasks)."""
 
     _label = 'Resize segmented or annotated volume'
-    _devStatus = BETA
     _possibleOutputs = outputObjects
     resizedFileList = []
 

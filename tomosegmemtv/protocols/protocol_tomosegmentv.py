@@ -27,7 +27,6 @@ from enum import Enum
 from os import remove
 from os.path import abspath
 from pwem.protocols import EMProtocol
-from pyworkflow import BETA
 from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED
 from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink
 from tomo.objects import SetOfTomoMasks, TomoMask
@@ -55,7 +54,6 @@ class ProtTomoSegmenTV(EMProtocol):
     """Segment membranes in tomograms"""
 
     _label = 'tomogram segmentation'
-    _devStatus = BETA
     _possibleOutputs = outputObjects
     tomoMaskListDelineated = []
 
@@ -145,6 +143,8 @@ class ProtTomoSegmenTV(EMProtocol):
                            '   - Saliency --> *filename%s.mrc*' % (S2, TV, SURF, TV2, FLT)
                       )
 
+        form.addParallelSection(threads=8, mpi =1)
+
     def _insertAllSteps(self):
         self._insertFunctionStep(self.convertInputStep)
         for tomo in self.inTomograms.get():
@@ -162,22 +162,25 @@ class ProtTomoSegmenTV(EMProtocol):
     def runTomoSegmenTV(self, tomoFile):
         tomoBaseName = removeBaseExt(tomoFile)
         tomoFile = self._getExtraPath(tomoBaseName + '.mrc')
+
+        Nthreads = self.numberOfThreads.get()
+
         # Scale space
         s2OutputFile = self._getExtraPath(tomoBaseName + S2 + MRC)
-        Plugin.runTomoSegmenTV(self, SCALE_SPACE, self._getScaleSpaceCmd(tomoFile, s2OutputFile))
+        Plugin.runTomoSegmenTV(self, SCALE_SPACE, self._getScaleSpaceCmd(tomoFile, Nthreads, s2OutputFile))
         # Tensor voting
         tVOutputFile = self._getExtraPath(tomoBaseName + TV + MRC)
-        Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(s2OutputFile, tVOutputFile))
+        Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(s2OutputFile, tVOutputFile, Nthreads))
         # Surfaceness
         surfOutputFile = self._getExtraPath(tomoBaseName + SURF + MRC)
-        Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSurfCmd(tVOutputFile, surfOutputFile))
+        Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSurfCmd(tVOutputFile, surfOutputFile, Nthreads))
         # Tensor voting - second round (to fill potential gaps and increase the robustness of the surfaceness map)
         tV2OutputFile = self._getExtraPath(tomoBaseName + TV2 + MRC)
         Plugin.runTomoSegmenTV(self, 'dtvoting',
-                               self._getTensorVotingCmd(surfOutputFile, tV2OutputFile, isFirstRound=False))
+                               self._getTensorVotingCmd(surfOutputFile, tV2OutputFile, Nthreads, isFirstRound=False))
         # Saliency - second round (apply again the surfaceness program, but this time to produce the saliency)
         salOutputFile = self._getExtraPath(tomoBaseName + FLT + MRC)
-        Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSalCmd(tV2OutputFile, salOutputFile))
+        Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSalCmd(tV2OutputFile, salOutputFile, Nthreads))
         self.tomoMaskListDelineated.append(salOutputFile)
         # Remove intermediate files if requested
         if not self.keepAllFiles.get():
@@ -221,13 +224,14 @@ class ProtTomoSegmenTV(EMProtocol):
 
     # --------------------------- UTIL functions -----------------------------------
 
-    def _getScaleSpaceCmd(self, inputFile, outputFile):
+    def _getScaleSpaceCmd(self, inputFile, Nthreads, outputFile):
         outputCmd = '-s %s ' % self.mbThkPix.get()
         outputCmd += '%s ' % inputFile
         outputCmd += '%s ' % outputFile
+        outputCmd += ' -t %i' % Nthreads
         return outputCmd
 
-    def _getTensorVotingCmd(self, inputFile, outputFile, isFirstRound=True):
+    def _getTensorVotingCmd(self, inputFile, outputFile, Nthreads, isFirstRound=True):
         outputCmd = '-s %s ' % self.mbScaleFactor.get()
         if isFirstRound and not self.blackOverWhite.get():
             outputCmd += '-w '
@@ -235,19 +239,22 @@ class ProtTomoSegmenTV(EMProtocol):
             outputCmd += '-w '  # After the first tensor voting, the image will be always white over black
         outputCmd += '%s ' % inputFile
         outputCmd += '%s ' % outputFile
+        outputCmd += ' -t %i' % Nthreads
         return outputCmd
 
-    def _getSurfCmd(self, inputFile, outputFile):
+    def _getSurfCmd(self, inputFile, outputFile, Nthreads):
         outputCmd = '-m %s ' % self.mbStrengthTh.get()
         outputCmd += '%s ' % inputFile
         outputCmd += '%s ' % outputFile
+        outputCmd += ' -t %i' % Nthreads
         return outputCmd
 
-    def _getSalCmd(self, inputFile, outputFile):
+    def _getSalCmd(self, inputFile, outputFile, Nthreads):
         outputCmd = '-S '
         outputCmd += '-s %s ' % self.sigmaS.get()
         outputCmd += '-p %s ' % self.sigmaP.get()
         outputCmd += '%s ' % inputFile
         outputCmd += '%s ' % outputFile
+        outputCmd += ' -t %i' % Nthreads
         return outputCmd
 

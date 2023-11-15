@@ -59,7 +59,7 @@ class TestTomosegmemTV(TestWorkflow):
             samplingRate=self.samplingRate
         )
         protImportTomo = self.launchProtocol(protImportTomo)
-        tomoSet = getattr(protImportTomo, 'outputTomograms', None)
+        tomoSet = protImportTomo.Tomograms
 
         # Validate output tomograms
         self.assertSetSize(tomoSet, size=2)
@@ -68,11 +68,11 @@ class TestTomosegmemTV(TestWorkflow):
 
         return protImportTomo
 
-    def _runTomosegmemTV(self, protImportTomo):
+    def _runTomosegmemTV(self, protImportTomo:ProtImportTomograms):
         print(magentaStr("\n==> Segmenting the membranes:"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=getattr(protImportTomo, 'outputTomograms', None),
+            inTomograms=protImportTomo.Tomograms,
             mbThkPix=2,
             mbScaleFactor=10,
             blackOverWhite=False

@@ -64,7 +64,7 @@ class TestResizeTomoMask(TestWorkflow):
             samplingRate=self.samplingRate
         )
         protImportTomo = self.launchProtocol(protImportTomo)
-        tomoSet = getattr(protImportTomo, 'outputTomograms', None)
+        tomoSet = protImportTomo.Tomograms
 
         # Validate output tomograms
         self.assertSetSize(tomoSet, size=self.setSize)
@@ -76,7 +76,7 @@ class TestResizeTomoMask(TestWorkflow):
     def _normalizeTomo(self, protImportTomo):
         print(magentaStr("\n==> Normalizing the tomograms to binning %i" % self.binning))
         protNormalizeTomo = self.newProtocol(ProtImodTomoNormalization,
-                                             inputSetOfTomograms=getattr(protImportTomo, 'outputTomograms', None),
+                                             inputSetOfTomograms=protImportTomo.Tomograms,
                                              binning=self.binning)
 
         protNormalizeTomo = self.launchProtocol(protNormalizeTomo)
@@ -109,12 +109,12 @@ class TestResizeTomoMask(TestWorkflow):
 
         return protTomosegmemTV
 
-    def _resizeTomoMask(self, protTomosegmemTV, protImportTomo):
+    def _resizeTomoMask(self, protTomosegmemTV, protImportTomo:ProtImportTomograms):
         print(magentaStr("\n==> Resizing the tomomasks to the size of the imported tomograms"))
         protResizeTomoMask = self.newProtocol(
             ProtResizeSegmentedVolume,
             inTomoMasks=getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None),
-            inTomos=getattr(protImportTomo, 'outputTomograms', None)
+            inTomos=protImportTomo.Tomograms
         )
         protResizeTomoMask = self.launchProtocol(protResizeTomoMask)
         tomoMaskSet = getattr(protResizeTomoMask, outputObjects.tomoMasks.name, None)
