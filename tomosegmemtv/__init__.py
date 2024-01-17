@@ -23,7 +23,8 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-import platform
+import logging
+logger = logging.getLogger(__name__)
 import string
 from os.path import join, exists
 from random import choices
@@ -32,6 +33,7 @@ import pwem
 import os
 
 from pyworkflow.utils import Environ, replaceExt
+from pyworkflow.utils import OS
 
 from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV_DEFAULT_VERSION, MEMBANNOTATOR, \
     MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
@@ -63,11 +65,15 @@ class Plugin(pwem.Plugin):
                                                             join(runtimePath, 'sys', 'os', 'glnxa64'),
                                                             join(runtimePath, 'sys', 'opengl', 'lib', 'glnxa64')])
                         })
-        # centOS distro requires an additional environment variable. However, the platform module does not contain the
-        # word or rhel or similar, but ubuntu does. Thus, for the moment, this will be simplified checking only if the
-        # distro is ubuntu or not
-        if 'ubuntu' not in platform.version().lower():
+        # centOS distro requires an additional environment variable.
+        if OS.isCentos():
+            logger.info("CentOS detected. Adding extra environment variable")
             environ.update({'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')})
+        else:
+            logger.info("Not on CentOS")
+
+        logger.info(environ)
+
         return environ
 
     @classmethod
