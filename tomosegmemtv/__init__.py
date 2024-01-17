@@ -69,10 +69,6 @@ class Plugin(pwem.Plugin):
         if OS.isCentos():
             logger.info("CentOS detected. Adding extra environment variable")
             environ.update({'LD_PRELOAD': join(runtimePath, 'bin', 'glnxa64', 'glibc-2.17_shim.so')})
-        else:
-            logger.info("Not on CentOS")
-
-        logger.info(environ)
 
         return environ
 
