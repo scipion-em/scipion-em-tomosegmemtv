@@ -40,7 +40,17 @@ class outputObjects(Enum):
 
 
 class ProtAnnotateMembranes(EMProtocol):
-    """ Manual annotation tool for segmented membranes
+    """ Manual annotation tool for segmented membranes\n
+
+    The annotation tool will open a graphical interface that will allow to manually
+    label the set of tomo mask. The graphical interface will call the function membseg2
+    for supervising the segmentation. This graphical interface was slightly modified
+    in collaboration with the autor for simplifying its use.
+
+    A complete tutorial about the use of this tool can be seen in:
+
+    https://scipion-em.github.io/docs/release-3.0.0/docs/user/denoising_mbSegmentation_pysegDirPicking/tomosegmemTV-pySeg-workflow.html#membrane-annotation
+
     """
     _label = 'annotate segmented membranes'
     _possibleOutputs = outputObjects
@@ -60,6 +70,14 @@ class ProtAnnotateMembranes(EMProtocol):
                       pointerClass='SetOfTomoMasks',
                       allowsNull=False,
                       help='Select the Tomogram Masks (segmented tomograms) for the membrane annotation.')
+
+        form.addParam('inputTomos', PointerParam,
+                      label="Tomograms (Optional used for visualization)",
+                      pointerClass='SetOfTomograms',
+                      allowsNull=True,
+                      help='Select the the set of tomogram used for obtaining the Tomo Masks. This set will'
+                           'only be used for visualization purpose in order to simplify the annotation. Of the '
+                           'tomo masks.')
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
