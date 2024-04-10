@@ -68,10 +68,9 @@ class MembAnnotatorDialog(ToolbarListDialog):
         # different protocols. MembraneAnnotator expects both to be in the same location, so a symbolic link is
         # is generated in the extra dir of the segmentation protocol pointing to the selected tomogram
         print("\n==> Running Membrane Annotator:")
-        tomoNameSrc = abspath(tomoMask.getVolName())
-        tomoName = abspath(join(getParentFolder(tomoMask.getFileName()), basename(tomoNameSrc)))
-        if not exists(tomoName):
-            symlink(tomoNameSrc, tomoName)
+        tomoName =  abspath(self.prot.getfltFile(tomoMask, '.mrc'))
+
+        tsId = tomoMask.getTsId()
         arguments = "inTomoFile '%s' " % tomoName
-        arguments += "outFilename '%s'" % abspath(join(self.path, removeBaseExt(tomoName)))
+        arguments += "outFilename '%s'" % abspath(self.prot._getExtraPath(tsId, tsId))
         Plugin.runMembraneAnnotator(self.prot, arguments, env=Plugin.getMembSegEnviron(), cwd=self.path)

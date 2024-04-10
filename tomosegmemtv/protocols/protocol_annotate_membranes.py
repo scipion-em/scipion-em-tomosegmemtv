@@ -24,16 +24,19 @@
 # **************************************************************************
 import glob
 from enum import Enum
+from os.path import join, basename
 
 from pwem.protocols import EMProtocol
 from pyworkflow.object import Integer
 from pyworkflow.protocol import PointerParam
-from pyworkflow.utils import removeBaseExt
+from pyworkflow.utils import removeBaseExt, makePath, createLink, replaceBaseExt
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from tomosegmemtv.viewers_interactive.memb_annotator_tomo_viewer import MembAnnotatorDialog
 from tomosegmemtv.viewers_interactive.memb_annotator_tree import MembAnnotatorProvider
 
+EXT_MRC = '.mrc'
+FLT_SUFFIX = '_flt'
 
 class outputObjects(Enum):
     tomoMasks = SetOfTomoMasks
@@ -59,7 +62,7 @@ class ProtAnnotateMembranes(EMProtocol):
         EMProtocol.__init__(self, **kwargs)
         self._objectsToGo = Integer()
         self._provider = None
-        self._tomoList = None
+        self._tomoMaskDict = None
         
     def _defineParams(self, form):
 
@@ -72,7 +75,7 @@ class ProtAnnotateMembranes(EMProtocol):
                       help='Select the Tomogram Masks (segmented tomograms) for the membrane annotation.')
 
         form.addParam('inputTomos', PointerParam,
-                      label="Tomograms (Optional used for visualization)",
+                      label="Tomograms (Optional, only used for visualization)",
                       pointerClass='SetOfTomograms',
                       allowsNull=True,
                       help='Select the the set of tomogram used for obtaining the Tomo Masks. This set will'
@@ -81,10 +84,37 @@ class ProtAnnotateMembranes(EMProtocol):
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
+
         self._initialize()
+
+        self._insertFunctionStep(self.convertInputStep)
         self._insertFunctionStep(self.runMembraneAnnotator, interactive=True)
 
     # --------------------------- STEPS functions -----------------------------
+    def convertInputStep(self):
+        for tsId, tomoMask in self._tomoMaskDict.items():
+            tsIdPath = self._getExtraPath(tsId)
+            makePath(tsIdPath)
+
+            createLink(tomoMask.getFileName(), self.getfltFile(tomoMask, FLT_SUFFIX + EXT_MRC))
+            if self.inputTomos.get():
+                tomo = self._tomoDict.get(tsId, None)
+                if tomo:
+                    createLink(tomo.getFileName(), self.getTomoMaskFile(tomo))
+                else:
+                    createLink(tomoMask.getFileName(), self.getTomoMaskFile(tomoMask))
+            else:
+                createLink(tomoMask.getFileName(), self.getfltFile(tomoMask) + EXT_MRC)
+
+    def getfltFile(self, tomoMask, suffix=''):
+        tsId = tomoMask.getTsId()
+        return self._getExtraPath(tsId, removeBaseExt(tomoMask.getFileName().replace('_flt', '')) + suffix)
+
+    def getTomoMaskFile(self, tomoMask):
+        tsId = tomoMask.getTsId()
+        return self._getExtraPath(tsId, basename(tomoMask.getFileName()))
+
+
     def runMembraneAnnotator(self):
         # There are still some objects which haven't been annotated --> launch GUI
         self._getAnnotationStatus()
@@ -112,17 +142,31 @@ class ProtAnnotateMembranes(EMProtocol):
                 summary.append('All segmentations have been already annotated.')
         return summary
 
+    def _validate(self):
+        error = []
+        # This is a tolerance in the sampling rate to ensure that tomoMask and tomograms have similar pixel size
+        tolerance = 0.001
+        if self.inputTomos.get():
+            if abs(self.inputTomos.get().getSamplingRate() - self.inputTomoMasks.get().getSamplingRate()) > tolerance:
+                error.append('The sampling rate of the tomograms does not match the sampling rate of the input masks')
+
+        return error
+
     # --------------------------- UTIL functions -----------------------------------
 
     def _initialize(self):
-        self._tomoList = [tomo.clone() for tomo in self.inputTomoMasks.get().iterItems()]
-        self._provider = MembAnnotatorProvider(self._tomoList, self._getExtraPath(), 'membAnnotator')
+        import time
+        time.sleep(12)
+        self._tomoMaskDict = {tomoMask.getTsId(): tomoMask.clone() for tomoMask in self.inputTomoMasks.get().iterItems()}
+        if self.inputTomos.get():
+            self._tomoDict = {tomo.getTsId(): tomo.clone() for tomo in self.inputTomos.get().iterItems()}
+        self._provider = MembAnnotatorProvider(list(self._tomoMaskDict.values()), self._getExtraPath(), 'membAnnotator')
         self._getAnnotationStatus()
 
     def _getAnnotationStatus(self):
         """Check if all the tomo masks have been annotated and store current status in a text file"""
-        doneTomes = [self._provider.getObjectInfo(tomo)['tags'] == 'done' for tomo in self._tomoList]
-        self._objectsToGo.set(len(self._tomoList) - sum(doneTomes))
+        doneTomes = [self._provider.getObjectInfo(tomo)['tags'] == 'done' for tomo in list(self._tomoMaskDict.values())]
+        self._objectsToGo.set(len(self._tomoMaskDict) - sum(doneTomes))
 
     def _getCurrentTomoMaskFile(self, inTomoFile):
         baseName = removeBaseExt(inTomoFile)

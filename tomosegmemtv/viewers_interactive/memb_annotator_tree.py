@@ -33,16 +33,17 @@ from tomo.viewers.views_tkinter_tree import TomogramsTreeProvider
 class MembAnnotatorProvider(TomogramsTreeProvider):
 
     def getObjectInfo(self, inTomo):
-        tomogramName = removeBaseExt(inTomo.getVolName())
-        filePath = join(self._path, tomogramName + "_materials.mrc")
+
+        tsId = inTomo.getTsId()
+        filePath = join(self._path, tsId, tsId + "_materials.mrc")
 
         if not isfile(filePath):
-            return {'key': tomogramName, 'parent': None,
-                    'text': tomogramName, 'values': "PENDING",
+            return {'key': tsId, 'parent': None,
+                    'text': tsId, 'values': "PENDING",
                     'tags': "pending"}
         else:
-            return {'key': tomogramName, 'parent': None,
-                    'text': tomogramName, 'values': "DONE",
+            return {'key': tsId, 'parent': None,
+                    'text': tsId, 'values': "DONE",
                     'tags': "done"}
 
     def getColumns(self):
