@@ -86,12 +86,21 @@ class ProtAnnotateMembranes(EMProtocol):
     def _insertAllSteps(self):
 
         self._initialize()
-
         self._insertFunctionStep(self.convertInputStep)
         self._insertFunctionStep(self.runMembraneAnnotator, interactive=True)
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
+        '''
+        In this convert we perform two things:
+            1) A folder per tomogram is created. The name of the folder is the TsId
+            2) Symbolic link are created: The annotator expects two files the tomogram and the tomomask.
+            The files must have .mrc extension. The tomomask should also contain the suffix _flt.
+            The function will create two symbolic links, one for the tomo mask and one for the tomogram.
+            Due to the tomograms are not mandatory in the form. If the tomogram is not provided the second
+            symbolic link will also point to the tomomask.
+        '''
+
         for tsId, tomoMask in self._tomoMaskDict.items():
             tsIdPath = self._getExtraPath(tsId)
             makePath(tsIdPath)
