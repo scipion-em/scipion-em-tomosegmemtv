@@ -164,8 +164,6 @@ class ProtAnnotateMembranes(EMProtocol):
     # --------------------------- UTIL functions -----------------------------------
 
     def _initialize(self):
-        import time
-        time.sleep(12)
         self._tomoMaskDict = {tomoMask.getTsId(): tomoMask.clone() for tomoMask in self.inputTomoMasks.get().iterItems()}
         if self.inputTomos.get():
             self._tomoDict = {tomo.getTsId(): tomo.clone() for tomo in self.inputTomos.get().iterItems()}
