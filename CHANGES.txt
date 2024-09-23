@@ -1,3 +1,6 @@
+v3.2.0
+  - The annotator was generalized to make use of tomomask created by other softwares 
+  - The helps were enhanced this affects to protocols and parameters
 v3.1.2:
   - Place correctly the protocols on the left panel.
   - Fix execution in CentOS or other distros

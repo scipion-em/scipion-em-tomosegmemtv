@@ -41,7 +41,15 @@ class outputObjects(Enum):
 
 
 class ProtResizeSegmentedVolume(EMProtocol):
-    """Resize segmented volumes or annotated (TomoMasks)."""
+    """Resize segmented volumes or annotated (TomoMasks).
+
+    Given a TomoMask and a Tomogram the tomoMask will be upsampled or downsampled to
+    according to the sampling rate of the input tomograms. The outpu tomoMasks will
+    have the same sampling rate than the Tomograms.
+
+    The used algorithm for scaling is based on splines, see:
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.zoom.html
+    """
 
     _label = 'Resize segmented or annotated volume'
     _possibleOutputs = outputObjects
