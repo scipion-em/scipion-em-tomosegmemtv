@@ -51,7 +51,35 @@ class outputObjects(Enum):
 
 
 class ProtTomoSegmenTV(EMProtocol):
-    """Segment membranes in tomograms"""
+    """TomoSegMemTV is a software suite for segmenting membranes in tomograms. The method
+    is based on (1) a Gaussian-like model of membrane profile, (2) a local differential structure
+    approach and (3) anisotropic propagation of the local structural information using the tensor
+    voting algorithm. In particular, it makes use of the next steps\n
+
+    _1 Scale-space_: This stage allows isolation of the information according to the spatial
+    scale by filtering out features with a size smaller than the given scale. It basically
+    consists of a Gaussian filtering.\n
+    _2 Dense Tensor voting_: In this stage, the voxels of the input tomogram communicate among
+    themselves by propagating local structural information between each other. The local
+    information is encoded in a second order tensor, called vote. The local properties at each
+    voxel are then refined according to the information received from the neighbors.
+    Voxels belonging to the same geometric feature will have strengthened each other and their
+    tensors will have been modified to enhance the underlying global structure.\n
+
+    _3 Surfaceness/Saliency_: This stage applies a local detector based on the
+    Gaussian membrane model. The local detector relies on differential information,
+    as it has to analyze local structure. In order to make it invariant to the membrane
+    direction, the detector is established along the normal to the membrane at the local
+    scale. An eigen-analysis of the Hessian tensor is well suited to determine such
+    direction and provide the membrane-strength (M) for each voxel. Only voxels with
+    membrane-strength higher than a threshold are considered and subjected to a non-maximum
+    supression (NMS) operation so as to give a 1-voxel-thick surface. The final output map
+    consists in planarity descriptors that represent the actual probability of
+    belonging to a true surface (hence surfaceness).\n
+
+    Once these protocols ends, it is neccesary to threshold the output map.
+
+    """
 
     _label = 'tomogram segmentation'
     _possibleOutputs = outputObjects
@@ -67,7 +95,8 @@ class ProtTomoSegmenTV(EMProtocol):
         form.addParam('inTomograms', PointerParam,
                       pointerClass='SetOfTomograms',
                       allowsNull=False,
-                      label='Input tomograms')
+                      label='Input tomograms',
+                      help='This is the set of tomograms to be segmented obtaining tomo Masks')
 
         form.addParam('mbThkPix', IntParam,
                       allowsNull=False,
@@ -75,23 +104,31 @@ class ProtTomoSegmenTV(EMProtocol):
                       validators=[GT(0)],
                       label='Membrane thickness (voxels)',
                       help='It basically represents the standard deviation of a Gaussian filtering. '
+                           'This parameter should represent the thickness (in pixels) of the membranes sought.'
+                           'So, visual inspection of the tomogram helps the user to find out a proper value.'
                            'In general, any value in a range around that thickness works well. Too low '
                            'values may make spurious details produce false positives at the local membrane '
                            'detector while too high values may excessively smear out the membranes, which '
-                           'in turn may produce discontinuities in the segmentation results.'
-                      )
+                           'in turn may produce discontinuities in the segmentation results. '
+                           'This parameter is used in the scale-space step')
+
         form.addParam('mbScaleFactor', IntParam,
                       allowsNull=False,
                       default=10,
                       validators=[GT(0)],
                       label='Membrane scale factor (voxels)',
-                      help='This defines the effective neighborhood involved in the voting process. '
-                           'Depending on the thickness of the membranes in the tomogram, lower (for '
-                           'thinner membranes) or higher values (for thicker ones) may be more appropriate.'
+                      help='This parameter is used for tensor voting. This defines the effective neighborhood '
+                           'involved in the voting process. Depending on the thickness of the membranes in '
+                           'the tomogram, lower (for thinner membranes) or higher values (for thicker ones)'
+                           ' may be more appropriate.'
                       )
+
         form.addParam('blackOverWhite', BooleanParam,
                       label='Is black over white?',
-                      default=True
+                      default=True,
+                      help = 'By default, the program assumes that the features to detect (foreground/membranes) '
+                             'are black (darker) over white (lighter) background. This is normally the case '
+                             'in cryo-tomography.'
                       )
         group = form.addGroup('Membrane delineation',
                               expertLevel=LEVEL_ADVANCED)
@@ -101,13 +138,14 @@ class ProtTomoSegmenTV(EMProtocol):
                        validators=[GT(0)],
                        expertLevel=LEVEL_ADVANCED,
                        label='Membrane-strength threshold',
-                       help='Allow the user tune the amount of output membrane points and remove false positives. '
-                            'Only voxels with values of membrane-strength threshold higher than this value '
+                       help='Allows the user to specify a threshold for the membrane-strength. '
+                            'Only voxels with values than the membrane-strength threshold '
                             'will be considered as potential membrane points, and planarity descriptors will '
                             'be calculated for them. Higher values will generate less membrane points, at the '
                             'risk of producing gaps in the membranes. Lower values will provide more membrane '
-                            'points, at the risk of generating false positives.'
-                      )
+                            'points, at the risk of generating false positives.\n'
+                            'Check the gray level of the membranes of the input images to introduce a proper '
+                            'value.')
         group.addParam('sigmaS', FloatParam,
                        label='Sigma for the initial gaussian filtering',
                        default=1,
@@ -143,7 +181,7 @@ class ProtTomoSegmenTV(EMProtocol):
                            '   - Saliency --> *filename%s.mrc*' % (S2, TV, SURF, TV2, FLT)
                       )
 
-        form.addParallelSection(threads=8, mpi =1)
+        form.addParallelSection(threads=8, mpi=1)
 
     def _insertAllSteps(self):
         self._insertFunctionStep(self.convertInputStep)
@@ -220,7 +258,7 @@ class ProtTomoSegmenTV(EMProtocol):
     def _validate(self):
         if not os.path.exists(Plugin.getProgram(SCALE_SPACE)):
             return ["%s is not at %s. Review installation. Please go to %s for instructions." %
-                    (SCALE_SPACE, Plugin.getProgram(SCALE_SPACE),Plugin.getUrl())]
+                    (SCALE_SPACE, Plugin.getProgram(SCALE_SPACE), Plugin.getUrl())]
 
     # --------------------------- UTIL functions -----------------------------------
 
@@ -257,4 +295,3 @@ class ProtTomoSegmenTV(EMProtocol):
         outputCmd += '%s ' % outputFile
         outputCmd += ' -t %i' % Nthreads
         return outputCmd
-
