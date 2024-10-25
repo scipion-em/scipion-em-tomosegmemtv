@@ -104,15 +104,15 @@ class ProtResizeSegmentedVolume(EMProtocol):
     def createOutputStep(self):
         # Lists of input tomograms and resized tomo masks are sorted by name to ensure that
         # the relation between them is coherent
-        inTomoList = [tomo.clone() for tomo in self.inTomos.get()]
-        inTomoList.sort(key=self._sortTomoNames)
-        resizedFileList = sorted(self.resizedFileList)
+        inTomoDict = {removeBaseExt(tomo.getFileName()): tomo.clone() for tomo in self.inTomos.get()}
+        resizedFileList = self.resizedFileList
         inTomoMasksDir = getParentFolder(self.inTomoMasks.get().getFirstItem().getFileName())
 
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='resized')
         tomoMaskSet.copyInfo(self.inTomos.get())
         counter = 1
-        for resizedFile, inTomo in zip(resizedFileList, inTomoList):
+        for resizedFile in resizedFileList:
+            inTomo = inTomoDict[removeBaseExt(resizedFile.replace('_segmented.mrc', '.mrc'))]
             tomoMask = TomoMask()
             tomoMask.copyInfo(inTomo)
             tomoMask.setLocation((counter, resizedFile))
