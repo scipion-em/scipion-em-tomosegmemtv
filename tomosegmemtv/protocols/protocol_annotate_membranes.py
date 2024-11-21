@@ -175,9 +175,9 @@ class ProtAnnotateMembranes(EMProtocol):
         doneTomes = [self._provider.getObjectInfo(tomo)['tags'] == 'done' for tomo in list(self._tomoMaskDict.values())]
         self._objectsToGo.set(len(self._tomoMaskDict) - sum(doneTomes))
 
-    def _getCurrentTomoMaskFile(self, inTomoFile):
+    def _getCurrentTomoMaskFile(self, tsId, inTomoFile):
         baseName = removeBaseExt(inTomoFile)
-        return glob.glob(self._getExtraPath(baseName + '_materials.mrc'))[0]
+        return glob.glob(self._getExtraPath(tsId, baseName + '_materials.mrc'))[0]
 
     def _genOutputSetOfTomoMasks(self):
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='annotated')
@@ -187,8 +187,9 @@ class ProtAnnotateMembranes(EMProtocol):
         for inTomo in inTomoSet:
             tomoMask = TomoMask()
             inTomoFile = inTomo.getVolName()
+            tsId = inTomo.getTsId()
             tomoMask.copyInfo(inTomo)
-            tomoMask.setLocation((counter, self._getCurrentTomoMaskFile(inTomoFile)))
+            tomoMask.setLocation((counter, self._getCurrentTomoMaskFile(tsId, inTomoFile)))
             tomoMask.setVolName(inTomoFile)
             tomoMaskSet.append(tomoMask)
             counter += 1
