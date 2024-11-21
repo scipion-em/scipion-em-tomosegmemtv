@@ -125,8 +125,9 @@ class TestResizeTomoMask(TestWorkflow):
         self.assertEqual(tomoMaskSet.getDim(), self.origDim)
 
         # Check generated files
-        for file in self.virtualTomos:
-            self.assertTrue(exists(protResizeTomoMask._getExtraPath(removeBaseExt(file) + '_flt.mrc')))
+        for tomoMask in tomoMaskSet:
+            self.assertTrue(exists(tomoMask.getFileName()))
+            self.assertEqual(tomoMask.getSamplingRate(), self.samplingRate)
 
     def testResizeTomoMask(self):
         protImportTomo = self._importTomograms()

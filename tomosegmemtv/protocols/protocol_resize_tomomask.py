@@ -31,7 +31,8 @@ from scipy.ndimage import zoom
 import numpy as np
 from pwem.emlib.image import ImageHandler
 from pwem.protocols import EMProtocol
-from pyworkflow.protocol import PointerParam
+from pyworkflow.object import Set
+from pyworkflow.protocol import PointerParam, STEPS_PARALLEL
 from pyworkflow.utils import Message, removeBaseExt, getExt, getParentFolder
 from tomo.objects import SetOfTomoMasks, TomoMask
 
@@ -54,6 +55,14 @@ class ProtResizeSegmentedVolume(EMProtocol):
     _label = 'Resize segmented or annotated volume'
     _possibleOutputs = outputObjects
     resizedFileList = []
+    stepsExecutionMode = STEPS_PARALLEL
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.tomoMaskDict = None
+        self.inTomosDict = None
+        self.ih = None
+        self.inTomoMasksDir = None
 
     def _defineParams(self, form):
         """ Define the input parameters that will be used.
@@ -73,18 +82,41 @@ class ProtResizeSegmentedVolume(EMProtocol):
                       help='These tomograms will be used to be the ones to which the resized TomoMasks '
                            'will be referred to. Thus, the resized segmentations will be of the same size '
                            'of those tomograms.')
+        form.addParallelSection(threads=1, mpi=0)
 
     def _insertAllSteps(self):
-        tomoList = [tomoMask.clone() for tomoMask in self.inTomoMasks.get()]
-        for tomoMask in tomoList:
-            self._insertFunctionStep(self.resizeStep, tomoMask)
-        self._insertFunctionStep(self.createOutputStep)
+        self._initialize()
+        stepIds = []
+        for tsId in self.tomoMaskDict.keys():
+            rsId = self._insertFunctionStep(self.resizeStep, tsId,
+                                            prerequisites=None,
+                                            needsGPU=False)
+            cOutId = self._insertFunctionStep(self.createOutputStep, tsId,
+                                              prerequisites=rsId,
+                                              needsGPU=False)
+            stepIds.append(cOutId)
+        self._insertFunctionStep(self._closeOutputSet,
+                                 prerequisites=stepIds,
+                                 needsGPU=False)
 
-    def resizeStep(self, tomoMask):
-        ih = ImageHandler()
+    def _initialize(self):
+        self.ih = ImageHandler()
+        tomoMasks = self.inTomoMasks.get()
+        tomograms = self.inTomos.get()
+        tomoMasksIds = tomoMasks.getTSIds()
+        tomogramsIds = tomograms.getTSIds()
+        commonTsIds = set(tomoMasksIds) & set(tomogramsIds)
+        self.tomoMaskDict = {tomoMask.getTsId(): tomoMask.clone() for tomoMask in tomoMasks
+                             if tomoMask.getTsId() in commonTsIds}
+        self.inTomosDict = {tomo.getTsId(): tomo.clone() for tomo in tomograms
+                            if tomo.getTsId() in commonTsIds}
+        self.inTomoMasksDir = getParentFolder(self.inTomoMasks.get().getFirstItem().getFileName())
+
+    def resizeStep(self, tsId: str):
+        tomoMask = self.tomoMaskDict[tsId]
         fileName = tomoMask.getFileName()
-        x, y, z, _ = ih.getDimensions(tomoMask)
-        nx, ny, nz, _ = ih.getDimensions(self.inTomos.get().getFirstItem())
+        x, y, z, _ = self.ih.getDimensions(tomoMask)
+        nx, ny, nz, _ = self.ih.getDimensions(self.inTomosDict[tsId])
         with mrcfile.open(fileName, permissive=True) as mrc:
             originalMask = np.round_(mrc.data)
 
@@ -95,40 +127,32 @@ class ProtResizeSegmentedVolume(EMProtocol):
         resizedMask = zoom(originalMask, (rx, ry, rz), order=0)
 
         # Save resized data into a mrc file
-        resizedFileName = self._getResizedMaskFileName(fileName)
+        resizedFileName = self._getResizedMaskFileName(tsId)
         with mrcfile.open(resizedFileName, mode='w+') as mrc:
             mrc.set_data(np.round_(resizedMask))
 
         self.resizedFileList.append(resizedFileName)
 
-    def createOutputStep(self):
-        # Lists of input tomograms and resized tomo masks are sorted by name to ensure that
-        # the relation between them is coherent
-        inTomoDict = {removeBaseExt(tomo.getFileName()): tomo.clone() for tomo in self.inTomos.get()}
-        resizedFileList = self.resizedFileList
-        inTomoMasksDir = getParentFolder(self.inTomoMasks.get().getFirstItem().getFileName())
-
-        tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='resized')
-        tomoMaskSet.copyInfo(self.inTomos.get())
-        counter = 1
-        for resizedFile in resizedFileList:
-            inTomo = inTomoDict[removeBaseExt(resizedFile.replace('_segmented.mrc', '.mrc'))]
+    def createOutputStep(self, tsId: str):
+        with self._lock:
+            outputTomoMasks = self.getOutputSetOfTomomasks()
+            inTomo = self.inTomosDict[tsId]
+            resizedFile = self._getResizedMaskFileName(tsId)
             tomoMask = TomoMask()
             tomoMask.copyInfo(inTomo)
-            tomoMask.setLocation((counter, resizedFile))
+            tomoMask.setFileName(resizedFile)
             tomoMask.setVolName(inTomo.getFileName())
-            tomoMaskSet.append(tomoMask)
+
+            outputTomoMasks.append(tomoMask)
+            outputTomoMasks.update(tomoMask)
+            outputTomoMasks.write()
+            self._store(outputTomoMasks)
 
             # Make a symbolic link to the corresponding annotation data file if necessary (in case
             # of input set of annotated tomomasks)
-            annotationDataFile = join(inTomoMasksDir, removeBaseExt(resizedFile) + '.txt')
+            annotationDataFile = join(self.inTomoMasksDir, removeBaseExt(resizedFile) + '.txt')
             if exists(annotationDataFile):
                 symlink(annotationDataFile, self._getExtraPath(basename(annotationDataFile)))
-
-            counter += 1
-
-        self._defineOutputs(**{outputObjects.tomoMasks.name: tomoMaskSet})
-        self._defineSourceRelation(self.inTomoMasks.get(), tomoMaskSet)
 
     # --------------------------- INFO functions -----------------------------------
     def _summary(self):
@@ -136,12 +160,25 @@ class ProtResizeSegmentedVolume(EMProtocol):
         return summary
 
     # --------------------------- UTIL functions -----------------------------------
-    def _getResizedMaskFileName(self, fileName):
-        ext = getExt(fileName)
-        return self._getExtraPath(removeBaseExt(fileName) + ext)
+    def _getResizedMaskFileName(self, tsId: str):
+        tomoMask = self.tomoMaskDict[tsId]
+        ext = getExt(tomoMask.getFileName())
+        return self._getExtraPath(f'{tsId}{ext}')
 
-    @staticmethod
-    def _sortTomoNames(tomoList):
-        return sorted([tomo for tomo in tomoList.getFileName()])
+    def getOutputSetOfTomomasks(self):
+        outTomosAttrib = self._possibleOutputs.tomoMasks.name
+        outTomograms = getattr(self, outTomosAttrib, None)
+        if outTomograms:
+            outTomograms.enableAppend()
+            tomograms = outTomograms
+        else:
+            inSet = self.inTomos.get()
+            tomograms = SetOfTomoMasks.create(self._getPath(), template='tomomaskss%s.sqlite')
+            tomograms.copyInfo(inSet)
+            tomograms.setStreamState(Set.STREAM_OPEN)
+            setattr(self, outTomosAttrib, tomograms)
+            self._defineOutputs(**{outTomosAttrib: tomograms})
+            self._defineSourceRelation(inSet, tomograms)
 
+        return tomograms
 

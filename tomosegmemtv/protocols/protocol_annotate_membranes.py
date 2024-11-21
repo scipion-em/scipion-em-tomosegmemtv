@@ -86,8 +86,11 @@ class ProtAnnotateMembranes(EMProtocol):
     def _insertAllSteps(self):
 
         self._initialize()
-        self._insertFunctionStep(self.convertInputStep)
-        self._insertFunctionStep(self.runMembraneAnnotator, interactive=True)
+        self._insertFunctionStep(self.convertInputStep,
+                                 needsGPU=False)
+        self._insertFunctionStep(self.runMembraneAnnotator,
+                                 needsGPU=False,
+                                 interactive=True)
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):

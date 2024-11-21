@@ -186,9 +186,12 @@ class ProtTomoSegmenTV(EMProtocol):
     def _insertAllSteps(self):
         self._insertFunctionStep(self.convertInputStep)
         for tomo in self.inTomograms.get():
-            self._insertFunctionStep(self.runTomoSegmenTV, tomo.getFileName())
+            self._insertFunctionStep(self.runTomoSegmenTV,
+                                     tomo.getFileName(),
+                                     needsGPU=False)
 
-        self._insertFunctionStep(self.createOutputStep)
+        self._insertFunctionStep(self.createOutputStep,
+                                 needsGPU=False)
 
     def convertInputStep(self):
         # Convert the tomomask files if they are not .mrc
