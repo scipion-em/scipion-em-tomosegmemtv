@@ -72,7 +72,7 @@ class TestTomosegmemTV(TestWorkflow):
         print(magentaStr("\n==> Segmenting the membranes:"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=protImportTomo.Tomograms,
+            inTomos=protImportTomo.Tomograms,
             mbThkPix=2,
             mbScaleFactor=10,
             blackOverWhite=False

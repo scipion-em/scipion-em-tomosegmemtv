@@ -22,20 +22,25 @@
 # *  e-mail address 'scipion-users@lists.sourceforge.net'
 # *
 # **************************************************************************
+import logging
 import os
 from enum import Enum
 from os import remove
 from os.path import abspath
+from pwem.emlib.image import ImageHandler
 from pwem.protocols import EMProtocol
-from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED
-from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink
+from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED, STEPS_PARALLEL
+from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink, cyanStr
 from tomo.objects import SetOfTomoMasks, TomoMask
-
 from tomosegmemtv import Plugin
+from tomosegmemtv.protocols.protocol_base import ProtocolBase
 
+logger = logging.getLogger(__name__)
+
+# TomoSegmemTV programs
 SCALE_SPACE = 'scale_space'
-
-MRC = '.mrc'
+DT_VOTING = 'dtvoting'
+SURFACENESS = 'surfaceness'
 
 # Generated files suffixes
 S2 = '_s2'
@@ -45,12 +50,14 @@ TV2 = '_tv2'
 FLT = '_flt'
 SUFFiXES_2_REMOVE = [S2, TV, SURF, TV2]
 
+MRC = '.mrc'
+
 
 class outputObjects(Enum):
     tomoMasks = SetOfTomoMasks
 
 
-class ProtTomoSegmenTV(EMProtocol):
+class ProtTomoSegmenTV(ProtocolBase):
     """TomoSegMemTV is a software suite for segmenting membranes in tomograms. The method
     is based on (1) a Gaussian-like model of membrane profile, (2) a local differential structure
     approach and (3) anisotropic propagation of the local structural information using the tensor
@@ -83,7 +90,11 @@ class ProtTomoSegmenTV(EMProtocol):
 
     _label = 'tomogram segmentation'
     _possibleOutputs = outputObjects
-    tomoMaskListDelineated = []
+    stepsExecutionMode = STEPS_PARALLEL
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.tomoMaskListDelineated = []
 
     def _defineParams(self, form):
         """ Define the input parameters that will be used.
@@ -92,11 +103,7 @@ class ProtTomoSegmenTV(EMProtocol):
         """
         # You need a params to belong to a section:
         form.addSection(label=Message.LABEL_INPUT)
-        form.addParam('inTomograms', PointerParam,
-                      pointerClass='SetOfTomograms',
-                      allowsNull=False,
-                      label='Input tomograms',
-                      help='This is the set of tomograms to be segmented obtaining tomo Masks')
+        self.insertInTomosParam(form)
 
         form.addParam('mbThkPix', IntParam,
                       allowsNull=False,
@@ -180,78 +187,89 @@ class ProtTomoSegmenTV(EMProtocol):
                            '   - Second tensor voting --> *filename%s.mrc*\n'
                            '   - Saliency --> *filename%s.mrc*' % (S2, TV, SURF, TV2, FLT)
                       )
-
-        form.addParallelSection(threads=8, mpi=1)
+        form.addParam('binThreads', IntParam,
+                      label='Tomosegmemtv threads',
+                      default=4,
+                      help='Number of threads used by Tomosegmemtv each time it is called in the protocol execution. For '
+                           'example, if 2 Scipion threads and 3 Tomosegmemtv threads are set, the tomograms will be '
+                           'processed in groups of 2 at the same time with a call of Tomosegmemtv with 3 threads each, so '
+                           '6 threads will be used at the same time. Beware the memory of your machine has '
+                           'memory enough to load together the number of tomograms specified by Scipion threads.')
+        form.addParallelSection(threads=1, mpi=0)
 
     def _insertAllSteps(self):
-        self._insertFunctionStep(self.convertInputStep)
-        for tomo in self.inTomograms.get():
-            self._insertFunctionStep(self.runTomoSegmenTV,
-                                     tomo.getFileName(),
+        self._initialize()
+        stepIds = []
+        for tsId in self.inTomosDict.keys():
+            cInId = self._insertFunctionStep(self.convertInputStep, tsId,
+                                     prerequisites=[],
+                                     needsGPU=False)
+            runId = self._insertFunctionStep(self.runTomoSegmenTV, tsId,
+                                     prerequisites=cInId,
                                      needsGPU=False)
 
-        self._insertFunctionStep(self.createOutputStep,
+            cOutId = self._insertFunctionStep(self.createOutputStep, tsId,
+                                     prerequisites=runId,
+                                     needsGPU=False)
+            stepIds.append(cOutId)
+        self._insertFunctionStep(self._closeOutputSet,
+                                 prerequisites=stepIds,
                                  needsGPU=False)
+        
+    def _initialize(self):
+        self.ih = ImageHandler()
+        self.inTomosDict = {tomo.getTsId(): tomo.clone() for tomo in self.inTomos.get()}
 
-    def convertInputStep(self):
-        # Convert the tomomask files if they are not .mrc
-        for tomo in self.inTomograms.get():
-            fn = tomo.getFileName()
-            newFn = self._getExtraPath(replaceBaseExt(fn, 'mrc'))
+    def convertInputStep(self, tsId: str):
+        tomo = self.inTomosDict[tsId]
+        fn = tomo.getFileName()
+        newFn = self._getConvertedOrLinkedFn(tsId)
+        logging.info(cyanStr(f'===> Converting or linking file {fn} into {newFn}'))
+        if fn.endswith(MRC):
             createLink(fn, newFn)
+        else:
+            self.ih.convert(fn, newFn)
 
-    def runTomoSegmenTV(self, tomoFile):
-        tomoBaseName = removeBaseExt(tomoFile)
-        tomoFile = self._getExtraPath(tomoBaseName + '.mrc')
-
-        Nthreads = self.numberOfThreads.get()
+    def runTomoSegmenTV(self, tsId: str):
+        logging.info(cyanStr(f'===> {tsId}: running TomoSegmemTV...'))
+        tomoFile = self._getConvertedOrLinkedFn(tsId)
+        Nthreads = self.binThreads.get()
 
         # Scale space
-        s2OutputFile = self._getExtraPath(tomoBaseName + S2 + MRC)
-        Plugin.runTomoSegmenTV(self, SCALE_SPACE, self._getScaleSpaceCmd(tomoFile, Nthreads, s2OutputFile))
+        logging.info(cyanStr(f'======> {tsId}: running program {SCALE_SPACE}...'))
+        s2OutputFile = self._getExtraPath(tsId + S2 + MRC)
+        cmd = self._getScaleSpaceCmd(tomoFile, Nthreads, s2OutputFile)
+        Plugin.runTomoSegmenTV(self, SCALE_SPACE, cmd)
         # Tensor voting
-        tVOutputFile = self._getExtraPath(tomoBaseName + TV + MRC)
-        Plugin.runTomoSegmenTV(self, 'dtvoting', self._getTensorVotingCmd(s2OutputFile, tVOutputFile, Nthreads))
+        logging.info(cyanStr(f'======> {tsId}: running program {DT_VOTING} round 1...'))
+        tVOutputFile = self._getExtraPath(tsId + TV + MRC)
+        cmd = self._getTensorVotingCmd(s2OutputFile, tVOutputFile, Nthreads)
+        Plugin.runTomoSegmenTV(self, DT_VOTING, cmd)
         # Surfaceness
-        surfOutputFile = self._getExtraPath(tomoBaseName + SURF + MRC)
-        Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSurfCmd(tVOutputFile, surfOutputFile, Nthreads))
+        logging.info(cyanStr(f'======> {tsId}: running program {SURFACENESS} round 1...'))
+        surfOutputFile = self._getExtraPath(tsId + SURF + MRC)
+        cmd = self._getSurfCmd(tVOutputFile, surfOutputFile, Nthreads)
+        Plugin.runTomoSegmenTV(self, SURFACENESS, cmd)
         # Tensor voting - second round (to fill potential gaps and increase the robustness of the surfaceness map)
-        tV2OutputFile = self._getExtraPath(tomoBaseName + TV2 + MRC)
-        Plugin.runTomoSegmenTV(self, 'dtvoting',
-                               self._getTensorVotingCmd(surfOutputFile, tV2OutputFile, Nthreads, isFirstRound=False))
+        logging.info(cyanStr(f'======> {tsId}: running program {DT_VOTING} round 2...'))
+        tV2OutputFile = self._getExtraPath(tsId + TV2 + MRC)
+        cmd = self._getTensorVotingCmd(surfOutputFile, tV2OutputFile, Nthreads, isFirstRound=False)
+        Plugin.runTomoSegmenTV(self, DT_VOTING, cmd)
         # Saliency - second round (apply again the surfaceness program, but this time to produce the saliency)
-        salOutputFile = self._getExtraPath(tomoBaseName + FLT + MRC)
-        Plugin.runTomoSegmenTV(self, 'surfaceness', self._getSalCmd(tV2OutputFile, salOutputFile, Nthreads))
+        logging.info(cyanStr(f'======> {tsId}: running program {SURFACENESS} round 2...'))
+        salOutputFile = self._getExtraPath(tsId + FLT + MRC)
+        cmd = self._getSalCmd(tV2OutputFile, salOutputFile, Nthreads)
+        Plugin.runTomoSegmenTV(self, SURFACENESS, cmd)
         self.tomoMaskListDelineated.append(salOutputFile)
         # Remove intermediate files if requested
         if not self.keepAllFiles.get():
             self._removeIntermediateFiles(tomoFile)
 
-    def createOutputStep(self):
-        labelledSet = self._genOutputSetOfTomoMasks(self.tomoMaskListDelineated, 'segmented')
-        self._defineOutputs(**{outputObjects.tomoMasks.name: labelledSet})
-        self._defineSourceRelation(self.inTomograms.get(), labelledSet)
-
-    def _genOutputSetOfTomoMasks(self, tomoMaskList, suffix):
-        tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix=suffix)
-        inTomoSet = self.inTomograms.get()
-        tomoMaskSet.copyInfo(inTomoSet)
-        counter = 1
-        for file, inTomo in zip(tomoMaskList, inTomoSet):
-            tomoMask = TomoMask()
-            fn = inTomo.getFileName()
-            tomoMask.copyInfo(inTomo)
-            tomoMask.setLocation((counter, file))
-            tomoMask.setVolName(self._getExtraPath(replaceBaseExt(fn, 'mrc')))
-            tomoMaskSet.append(tomoMask)
-            counter += 1
-
-        return tomoMaskSet
-
-    def _removeIntermediateFiles(self, tomoFile):
-        tomoBaseName = removeBaseExt(tomoFile)
-        for suffix in SUFFiXES_2_REMOVE:
-            remove(abspath(self._getExtraPath(tomoBaseName + suffix + MRC)))
+    def createOutputStep(self, tsId: str):
+        with self._lock:
+            inTomo = self.inTomosDict[tsId]
+            outFileName = self._getResultingFn(tsId)
+            self.addTomoMask(inTomo, outFileName)
 
     # --------------------------- INFO functions -----------------------------------
     def _summary(self):
@@ -264,6 +282,16 @@ class ProtTomoSegmenTV(EMProtocol):
                     (SCALE_SPACE, Plugin.getProgram(SCALE_SPACE), Plugin.getUrl())]
 
     # --------------------------- UTIL functions -----------------------------------
+    def _getConvertedOrLinkedFn(self, tsId: str) -> str:
+        return self._getExtraPath(f'{tsId}{MRC}')
+
+    def _getResultingFn(self, tsId: str) -> str:
+        return self._getExtraPath(f'{tsId}_flt{MRC}')
+
+    def _removeIntermediateFiles(self, tomoFile):
+        tomoBaseName = removeBaseExt(tomoFile)
+        for suffix in SUFFiXES_2_REMOVE:
+            remove(abspath(self._getExtraPath(tomoBaseName + suffix + MRC)))
 
     def _getScaleSpaceCmd(self, inputFile, Nthreads, outputFile):
         outputCmd = '-s %s ' % self.mbThkPix.get()

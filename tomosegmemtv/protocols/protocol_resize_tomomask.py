@@ -24,24 +24,23 @@
 # **************************************************************************
 from enum import Enum
 from os import symlink
-from os.path import exists, join, basename
+from os.path import exists, join
 
 import mrcfile
 from scipy.ndimage import zoom
 import numpy as np
 from pwem.emlib.image import ImageHandler
-from pwem.protocols import EMProtocol
-from pyworkflow.object import Set
 from pyworkflow.protocol import PointerParam, STEPS_PARALLEL
 from pyworkflow.utils import Message, removeBaseExt, getExt, getParentFolder
-from tomo.objects import SetOfTomoMasks, TomoMask
+from tomo.objects import SetOfTomoMasks
+from tomosegmemtv.protocols.protocol_base import ProtocolBase
 
 
 class outputObjects(Enum):
     tomoMasks = SetOfTomoMasks
 
 
-class ProtResizeSegmentedVolume(EMProtocol):
+class ProtResizeSegmentedVolume(ProtocolBase):
     """Resize segmented volumes or annotated (TomoMasks).
 
     Given a TomoMask and a Tomogram the tomoMask will be upsampled or downsampled to
@@ -75,13 +74,7 @@ class ProtResizeSegmentedVolume(EMProtocol):
                       pointerClass='SetOfTomoMasks',
                       allowsNull=False,
                       label='Input segmentations (TomoMasks)')
-        form.addParam('inTomos', PointerParam,
-                      pointerClass='SetOfTomograms',
-                      allowsNull=False,
-                      label='Input tomograms',
-                      help='These tomograms will be used to be the ones to which the resized TomoMasks '
-                           'will be referred to. Thus, the resized segmentations will be of the same size '
-                           'of those tomograms.')
+        self.insertInTomosParam(form)
         form.addParallelSection(threads=1, mpi=0)
 
     def _insertAllSteps(self):
@@ -135,24 +128,15 @@ class ProtResizeSegmentedVolume(EMProtocol):
 
     def createOutputStep(self, tsId: str):
         with self._lock:
-            outputTomoMasks = self.getOutputSetOfTomomasks()
             inTomo = self.inTomosDict[tsId]
             resizedFile = self._getResizedMaskFileName(tsId)
-            tomoMask = TomoMask()
-            tomoMask.copyInfo(inTomo)
-            tomoMask.setFileName(resizedFile)
-            tomoMask.setVolName(inTomo.getFileName())
-
-            outputTomoMasks.append(tomoMask)
-            outputTomoMasks.update(tomoMask)
-            outputTomoMasks.write()
-            self._store(outputTomoMasks)
+            self.addTomoMask(inTomo, resizedFile)
 
             # Make a symbolic link to the corresponding annotation data file if necessary (in case
             # of input set of annotated tomomasks)
             annotationDataFile = join(self.inTomoMasksDir, removeBaseExt(resizedFile) + '.txt')
             if exists(annotationDataFile):
-                symlink(annotationDataFile, self._getExtraPath(basename(annotationDataFile)))
+                symlink(annotationDataFile, self._getExtraPath(removeBaseExt(resizedFile) + '.txt'))
 
     # --------------------------- INFO functions -----------------------------------
     def _summary(self):
@@ -165,20 +149,4 @@ class ProtResizeSegmentedVolume(EMProtocol):
         ext = getExt(tomoMask.getFileName())
         return self._getExtraPath(f'{tsId}{ext}')
 
-    def getOutputSetOfTomomasks(self):
-        outTomosAttrib = self._possibleOutputs.tomoMasks.name
-        outTomograms = getattr(self, outTomosAttrib, None)
-        if outTomograms:
-            outTomograms.enableAppend()
-            tomograms = outTomograms
-        else:
-            inSet = self.inTomos.get()
-            tomograms = SetOfTomoMasks.create(self._getPath(), template='tomomaskss%s.sqlite')
-            tomograms.copyInfo(inSet)
-            tomograms.setStreamState(Set.STREAM_OPEN)
-            setattr(self, outTomosAttrib, tomograms)
-            self._defineOutputs(**{outTomosAttrib: tomograms})
-            self._defineSourceRelation(inSet, tomograms)
-
-        return tomograms
 

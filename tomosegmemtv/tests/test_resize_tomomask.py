@@ -92,7 +92,7 @@ class TestResizeTomoMask(TestWorkflow):
         print(magentaStr("\n==> Segmenting the membranes"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None),
+            inTomos=getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None),
             mbThkPix=6,
             mbScaleFactor=15,
             blackOverWhite=True,
