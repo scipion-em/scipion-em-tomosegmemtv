@@ -43,8 +43,8 @@ class ProtocolBase(EMProtocol):
                            'will be referred to. Thus, the resized segmentations will be of the same size '
                            'of those tomograms.')
 
-    def getInTomos(self, isPointer=True):
-        return self.inTomos.get() if isPointer else self.inTomos
+    def getInTomos(self, isPointer=False):
+        return self.inTomos if isPointer else self.inTomos.get()
 
     def getOutputSetOfTomomasks(self):
         outTomosAttrib = self._possibleOutputs.tomoMasks.name
@@ -57,7 +57,7 @@ class ProtocolBase(EMProtocol):
             outTomoMasks.setStreamState(Set.STREAM_OPEN)
             setattr(self, outTomosAttrib, outTomoMasks)
             self._defineOutputs(**{outTomosAttrib: outTomoMasks})
-            self._defineSourceRelation(self.getInTomos(isPointer=False), outTomoMasks)
+            self._defineSourceRelation(self.getInTomos(isPointer=True), outTomoMasks)
 
         return outTomoMasks
 
