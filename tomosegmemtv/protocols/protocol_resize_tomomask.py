@@ -73,7 +73,10 @@ class ProtResizeSegmentedVolume(ProtocolBase):
                       pointerClass='SetOfTomoMasks',
                       allowsNull=False,
                       label='Input segmentations (TomoMasks)')
-        self.insertInTomosParam(form)
+        self.insertInTomosParam(form,
+                                helpMsg='These tomograms will be used to be the ones to which the resized TomoMasks '
+                                        'will be referred to. Thus, the resized segmentations will be of the same size '
+                                        'of those tomograms.')
         form.addParallelSection(threads=1, mpi=0)
 
     def _insertAllSteps(self):
@@ -147,5 +150,3 @@ class ProtResizeSegmentedVolume(ProtocolBase):
         tomoMask = self.tomoMaskDict[tsId]
         ext = getExt(tomoMask.getFileName())
         return self._getExtraPath(f'{tsId}{ext}')
-
-

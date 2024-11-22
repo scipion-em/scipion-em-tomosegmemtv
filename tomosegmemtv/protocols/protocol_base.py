@@ -34,14 +34,12 @@ class ProtocolBase(EMProtocol):
         super().__init__(**kwargs)
 
     @staticmethod
-    def insertInTomosParam(form):
+    def insertInTomosParam(form, helpMsg=''):
         form.addParam('inTomos', PointerParam,
                       pointerClass='SetOfTomograms',
                       allowsNull=False,
-                      label='Input tomograms',
-                      help='These tomograms will be used to be the ones to which the resized TomoMasks '
-                           'will be referred to. Thus, the resized segmentations will be of the same size '
-                           'of those tomograms.')
+                      label='Tomograms',
+                      help=helpMsg)
 
     def getInTomos(self, isPointer=False):
         return self.inTomos if isPointer else self.inTomos.get()
