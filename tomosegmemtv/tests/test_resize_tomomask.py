@@ -29,7 +29,7 @@ import pyworkflow.tests as pwtests
 from imod.protocols import ProtImodTomoNormalization
 from imod.protocols.protocol_base import OUTPUT_TOMOGRAMS_NAME
 from pwem.tests.workflows import TestWorkflow
-from pyworkflow.utils import magentaStr, removeBaseExt, createLink
+from pyworkflow.utils import magentaStr, createLink
 from tomo.protocols import ProtImportTomograms
 from tomosegmemtv.protocols import ProtTomoSegmenTV, ProtResizeSegmentedVolume
 from tomosegmemtv.protocols.protocol_resize_tomomask import outputObjects

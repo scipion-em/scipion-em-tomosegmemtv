@@ -28,10 +28,9 @@ from enum import Enum
 from os import remove
 from os.path import abspath
 from pwem.emlib.image import ImageHandler
-from pwem.protocols import EMProtocol
-from pyworkflow.protocol import PointerParam, IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED, STEPS_PARALLEL
-from pyworkflow.utils import Message, removeBaseExt, replaceBaseExt, createLink, cyanStr
-from tomo.objects import SetOfTomoMasks, TomoMask
+from pyworkflow.protocol import IntParam, GT, FloatParam, BooleanParam, LEVEL_ADVANCED, STEPS_PARALLEL
+from pyworkflow.utils import Message, removeBaseExt, createLink, cyanStr
+from tomo.objects import SetOfTomoMasks
 from tomosegmemtv import Plugin
 from tomosegmemtv.protocols.protocol_base import ProtocolBase
 

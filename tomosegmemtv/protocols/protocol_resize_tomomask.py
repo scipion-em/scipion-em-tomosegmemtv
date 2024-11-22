@@ -25,7 +25,6 @@
 from enum import Enum
 from os import symlink
 from os.path import exists, join
-
 import mrcfile
 from scipy.ndimage import zoom
 import numpy as np
