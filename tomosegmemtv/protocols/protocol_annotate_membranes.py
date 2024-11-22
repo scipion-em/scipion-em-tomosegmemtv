@@ -29,7 +29,7 @@ from os.path import join, basename
 from pwem.protocols import EMProtocol
 from pyworkflow.object import Integer
 from pyworkflow.protocol import PointerParam
-from pyworkflow.utils import removeBaseExt, makePath, createLink, replaceBaseExt
+from pyworkflow.utils import removeBaseExt, makePath, createLink, replaceBaseExt, Message
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from tomosegmemtv.viewers_interactive.memb_annotator_tomo_viewer import MembAnnotatorDialog
@@ -65,8 +65,7 @@ class ProtAnnotateMembranes(EMProtocol):
         self._tomoMaskDict = None
         
     def _defineParams(self, form):
-
-        form.addSection(label='Input')
+        form.addSection(label=Message.LABEL_INPUT)
         form.addParam('inputTomoMasks', PointerParam,
                       label="Input Tomo Masks",
                       important=True,
@@ -84,7 +83,6 @@ class ProtAnnotateMembranes(EMProtocol):
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
-
         self._initialize()
         self._insertFunctionStep(self.convertInputStep,
                                  needsGPU=False)
@@ -94,7 +92,7 @@ class ProtAnnotateMembranes(EMProtocol):
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
-        '''
+        """
         In this convert we perform two things:
             1) A folder per tomogram is created. The name of the folder is the TsId
             2) Symbolic link are created: The annotator expects two files the tomogram and the tomomask.
@@ -102,7 +100,7 @@ class ProtAnnotateMembranes(EMProtocol):
             The function will create two symbolic links, one for the tomo mask and one for the tomogram.
             Due to the tomograms are not mandatory in the form. If the tomogram is not provided the second
             symbolic link will also point to the tomomask.
-        '''
+        """
 
         for tsId, tomoMask in self._tomoMaskDict.items():
             tsIdPath = self._getExtraPath(tsId)
@@ -178,9 +176,8 @@ class ProtAnnotateMembranes(EMProtocol):
         doneTomes = [self._provider.getObjectInfo(tomo)['tags'] == 'done' for tomo in list(self._tomoMaskDict.values())]
         self._objectsToGo.set(len(self._tomoMaskDict) - sum(doneTomes))
 
-    def _getCurrentTomoMaskFile(self, inTomoFile):
-        baseName = removeBaseExt(inTomoFile)
-        return glob.glob(self._getExtraPath(baseName + '_materials.mrc'))[0]
+    def _getCurrentTomoMaskFile(self, tsId: str):
+        return self._getExtraPath(tsId, tsId + '_materials.mrc')
 
     def _genOutputSetOfTomoMasks(self):
         tomoMaskSet = SetOfTomoMasks.create(self._getPath(), template='tomomasks%s.sqlite', suffix='annotated')
@@ -191,7 +188,7 @@ class ProtAnnotateMembranes(EMProtocol):
             tomoMask = TomoMask()
             inTomoFile = inTomo.getVolName()
             tomoMask.copyInfo(inTomo)
-            tomoMask.setLocation((counter, self._getCurrentTomoMaskFile(inTomoFile)))
+            tomoMask.setLocation((counter, self._getCurrentTomoMaskFile(inTomo.getTsId())))
             tomoMask.setVolName(inTomoFile)
             tomoMaskSet.append(tomoMask)
             counter += 1
