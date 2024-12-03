@@ -29,7 +29,7 @@ import pyworkflow.tests as pwtests
 from imod.protocols import ProtImodTomoNormalization
 from imod.protocols.protocol_base import OUTPUT_TOMOGRAMS_NAME
 from pwem.tests.workflows import TestWorkflow
-from pyworkflow.utils import magentaStr, removeBaseExt, createLink
+from pyworkflow.utils import magentaStr, createLink
 from tomo.protocols import ProtImportTomograms
 from tomosegmemtv.protocols import ProtTomoSegmenTV, ProtResizeSegmentedVolume
 from tomosegmemtv.protocols.protocol_resize_tomomask import outputObjects
@@ -92,7 +92,7 @@ class TestResizeTomoMask(TestWorkflow):
         print(magentaStr("\n==> Segmenting the membranes"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None),
+            inTomos=getattr(protNormalizeTomo, OUTPUT_TOMOGRAMS_NAME, None),
             mbThkPix=6,
             mbScaleFactor=15,
             blackOverWhite=True,
@@ -125,8 +125,9 @@ class TestResizeTomoMask(TestWorkflow):
         self.assertEqual(tomoMaskSet.getDim(), self.origDim)
 
         # Check generated files
-        for file in self.virtualTomos:
-            self.assertTrue(exists(protResizeTomoMask._getExtraPath(removeBaseExt(file) + '_flt.mrc')))
+        for tomoMask in tomoMaskSet:
+            self.assertTrue(exists(tomoMask.getFileName()))
+            self.assertEqual(tomoMask.getSamplingRate(), self.samplingRate)
 
     def testResizeTomoMask(self):
         protImportTomo = self._importTomograms()

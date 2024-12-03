@@ -24,12 +24,10 @@
 # *
 # **************************************************************************
 from os.path import join, exists
-
 import pyworkflow.tests as pwtests
 from pwem.tests.workflows import TestWorkflow
 from pyworkflow.utils import magentaStr, removeBaseExt, createLink
 from tomo.protocols import ProtImportTomograms
-
 from tomosegmemtv.protocols import ProtTomoSegmenTV
 from tomosegmemtv.protocols.protocol_tomosegmentv import outputObjects
 
@@ -72,7 +70,7 @@ class TestTomosegmemTV(TestWorkflow):
         print(magentaStr("\n==> Segmenting the membranes:"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomograms=protImportTomo.Tomograms,
+            inTomos=protImportTomo.Tomograms,
             mbThkPix=2,
             mbScaleFactor=10,
             blackOverWhite=False

@@ -24,22 +24,20 @@
 # *
 # **************************************************************************
 import logging
-logger = logging.getLogger(__name__)
 import string
 from os.path import join, exists
 from random import choices
-
 import pwem
 import os
-
 from pyworkflow.utils import Environ
 from pyworkflow.utils import OS
-
 from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV_DEFAULT_VERSION, MEMBANNOTATOR, \
     MEMBANNOTATOR_DEFAULT_VERSION, MEMBANNOTATOR_EM_DIR, TOMOSEGMEMTV_DIR, TOMOSEGMEMTV_EM_DIR, MEMBANNOTATOR_BIN
 
+logger = logging.getLogger(__name__)
+
 _references = ['MartinezSanchez2014']
-__version__ = '3.2.0'
+__version__ = '3.2.1'
 _logo = "icon.png"
 
 
