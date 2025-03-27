@@ -45,14 +45,14 @@ class TestTomosegmemTV(TestWorkflow):
         # Because only one tomogram is provided in the tutorial, 2 links will be created pointing to the same file, so
         # they can be interpreted as a set of two tomograms, making the test complexity closer to the real usage
         cls.virtualTomos = ['vTomo1', 'vTomo2']
-        virtualTomos = [join(ds.getPath(), fpath + '.mrc') for fpath in cls.virtualTomos]
+        virtualTomos = [cls.getOutputPath( fpath + '.mrc') for fpath in cls.virtualTomos]
         [createLink(ds.getFile('tomogram'), virtualTomo) for virtualTomo in virtualTomos]
 
     def _importTomograms(self):
         print(magentaStr("\n==> Importing data - tomograms:"))
         protImportTomo = self.newProtocol(
             ProtImportTomograms,
-            filesPath=self.ds.getPath(),
+            filesPath=self.getOutputPath(),
             filesPattern='vTomo*.mrc',
             samplingRate=self.samplingRate
         )
