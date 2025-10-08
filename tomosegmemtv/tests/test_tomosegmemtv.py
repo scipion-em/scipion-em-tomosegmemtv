@@ -23,16 +23,16 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from os.path import join, exists
+from os.path import exists
 import pyworkflow.tests as pwtests
-from pwem.tests.workflows import TestWorkflow
 from pyworkflow.utils import magentaStr, removeBaseExt, createLink
 from tomo.protocols import ProtImportTomograms
+from tomo.tests.test_base_centralized_layer import TestBaseCentralizedLayer
 from tomosegmemtv.protocols import ProtTomoSegmenTV
 from tomosegmemtv.protocols.protocol_tomosegmentv import outputObjects
 
 
-class TestTomosegmemTV(TestWorkflow):
+class TestTomosegmemTV(TestBaseCentralizedLayer):
     virtualTomo2 = None
     virtualTomo1 = None
 
@@ -77,12 +77,11 @@ class TestTomosegmemTV(TestWorkflow):
         )
         protTomosegmemTV = self.launchProtocol(protTomosegmemTV)
         tomoMaskSet = getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None)
-
-        # Check output set
-        self.assertSetSize(tomoMaskSet, size=2)
-        self.assertEqual(tomoMaskSet.getSamplingRate(), self.samplingRate)
-        self.assertEqual(tomoMaskSet.getDim(), (141, 281, 91))
-
+        # Check the results
+        self.checkTomoMasks(tomoMaskSet,
+                            expectedSetSize=2,
+                            expectedSRate=tomoMaskSet.getSamplingRate(),
+                            expectedDimensions=[141, 281, 91])
         # Check generated files
         for file in self.virtualTomos:
             self.assertTrue(exists(protTomosegmemTV._getExtraPath(removeBaseExt(file) + '_flt.mrc')))
