@@ -28,6 +28,8 @@ from os.path import exists, join
 import mrcfile
 from scipy.ndimage import zoom
 import numpy as np
+
+from pwem.convert.headers import setMRCSamplingRate
 from pwem.emlib.image import ImageHandler
 from pyworkflow.protocol import PointerParam, STEPS_PARALLEL
 from pyworkflow.utils import Message, removeBaseExt, getExt, getParentFolder
@@ -132,6 +134,7 @@ class ProtResizeSegmentedVolume(ProtocolBase):
         with self._lock:
             inTomo = self.inTomosDict[tsId]
             resizedFile = self._getResizedMaskFileName(tsId)
+            setMRCSamplingRate(resizedFile, inTomo.getSamplingRate())  # Update the apix value in file header
             self.addTomoMask(inTomo, resizedFile)
 
             # Make a symbolic link to the corresponding annotation data file if necessary (in case

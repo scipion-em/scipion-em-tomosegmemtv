@@ -31,7 +31,3 @@ DataSet(name='tomosegmemtv', folder='tomosegmemtv',
                'tomogram': 'emd_1155i.mrc'
         })
 
-DataSet(name='emd_10439', folder='emd_10439',
-        files={
-            'annotatedTomomask': 'tomomasksAnnotated/emd_10439_materials.mrc'
-        })

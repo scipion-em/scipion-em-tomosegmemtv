@@ -23,26 +23,27 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from os import remove
-from os.path import join, exists
+import tempfile
+from os.path import join
 import pyworkflow.tests as pwtests
 from imod.protocols import ProtImodTomoNormalization
 from imod.protocols.protocol_base import OUTPUT_TOMOGRAMS_NAME
-from pwem.tests.workflows import TestWorkflow
 from pyworkflow.utils import magentaStr, createLink
 from tomo.protocols import ProtImportTomograms
+from tomo.tests import EMD_10439, DataSetEmd10439
+from tomo.tests.test_base_centralized_layer import TestBaseCentralizedLayer
 from tomosegmemtv.protocols import ProtTomoSegmenTV, ProtResizeSegmentedVolume
 from tomosegmemtv.protocols.protocol_resize_tomomask import outputObjects
 
 
-class TestResizeTomoMask(TestWorkflow):
+class TestResizeTomoMask(TestBaseCentralizedLayer):
     origDim = (464, 464, 250)
     binning = 2
 
     @classmethod
     def setUpClass(cls):
         pwtests.setupTestProject(cls)
-        ds = pwtests.DataSet.getDataSet('emd_10439')
+        ds = pwtests.DataSet.getDataSet(EMD_10439)
         cls.ds = ds
         cls.setSize = 2
         cls.samplingRate = 13.68
@@ -50,15 +51,16 @@ class TestResizeTomoMask(TestWorkflow):
         # Because only one tomogram is contained in the used dataset, 2 links will be created pointing to the same
         # file, so they can be interpreted as a set of two tomograms, making the test complexity closer to the real
         # usage
+        cls.testTmpdir = tempfile.mkdtemp()
         cls.virtualTomos = ['vTomo1', 'vTomo2']
-        virtualTomos = [cls.getOutputPath( fpath + '.mrc') for fpath in cls.virtualTomos]
-        [createLink(ds.getFile('annotatedTomomask'), virtualTomo) for virtualTomo in virtualTomos]
+        virtualTomos = [join(cls.testTmpdir, f"{fpath}.mrc") for fpath in cls.virtualTomos]
+        [createLink(ds.getFile(DataSetEmd10439.annotatedTomomask.name), virtualTomo) for virtualTomo in virtualTomos]
 
     def _importTomograms(self):
         print(magentaStr("\n==> Importing the tomograms"))
         protImportTomo = self.newProtocol(
             ProtImportTomograms,
-            filesPath=self.getOutputPath(),
+            filesPath=self.testTmpdir,
             filesPattern='vTomo*.mrc',
             samplingRate=self.samplingRate
         )
@@ -117,16 +119,11 @@ class TestResizeTomoMask(TestWorkflow):
         )
         protResizeTomoMask = self.launchProtocol(protResizeTomoMask)
         tomoMaskSet = getattr(protResizeTomoMask, outputObjects.tomoMasks.name, None)
-
-        # Check output set
-        self.assertSetSize(tomoMaskSet, size=self.setSize)
-        self.assertEqual(tomoMaskSet.getSamplingRate(), self.samplingRate)
-        self.assertEqual(tomoMaskSet.getDim(), self.origDim)
-
-        # Check generated files
-        for tomoMask in tomoMaskSet:
-            self.assertTrue(exists(tomoMask.getFileName()))
-            self.assertEqual(tomoMask.getSamplingRate(), self.samplingRate)
+        # Check the results
+        self.checkTomoMasks(tomoMaskSet,
+                            expectedSetSize=self.setSize,
+                            expectedSRate=tomoMaskSet.getSamplingRate(),
+                            expectedDimensions=list(self.origDim))
 
     def testResizeTomoMask(self):
         protImportTomo = self._importTomograms()
