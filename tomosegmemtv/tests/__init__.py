@@ -26,8 +26,7 @@
 
 from pyworkflow.tests import DataSet
 
-DataSet(name='tomosegmemtv', folder='tomosegmemtv',
+DataSet(name='emd_10439', folder='emd_10439',
         files={
-               'tomogram': 'emd_1155i.mrc'
+            'annotatedTomomask': 'tomomasksAnnotated/emd_10439_materials.mrc'
         })
-

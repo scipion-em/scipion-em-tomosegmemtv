@@ -1,11 +1,13 @@
 v3.2.2: the sampling rate is properly set in the header of the generated files.
 v3.2.1:
   Users:
-    - Protocols tomosegmemtv and resize tomomask are now parallelized.
-    - Resize tomomasks:
+   - Protocols tomosegmemtv and resize tomomask are now parallelized.
+   - Resize tomomasks:
   Developers: fix bug.
    - Add needsGpu and binThreads attributes.
    - Refactoring, cleaning code and tests update.
+   - TomosegmemTV tests use the TCL now.
+   - Replace the setup.py by the corresponding pyproject.toml.
 v3.2.0
   - The annotator was generalized to make use of tomomask created by other softwares 
   - The helps were enhanced this affects to protocols and parameters
