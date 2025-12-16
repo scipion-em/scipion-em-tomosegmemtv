@@ -53,7 +53,6 @@ class ProtAnnotateMembranes(EMProtocol):
     A complete tutorial about the use of this tool can be seen in:
 
     https://scipion-em.github.io/docs/release-3.0.0/docs/user/denoising_mbSegmentation_pysegDirPicking/tomosegmemTV-pySeg-workflow.html#membrane-annotation
-
     """
     _label = 'annotate segmented membranes'
     _possibleOutputs = outputObjects
