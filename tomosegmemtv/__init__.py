@@ -37,7 +37,7 @@ from tomosegmemtv.constants import TOMOSEGMEMTV_HOME, TOMOSEGMEMTV, TOMOSEGMEMTV
 logger = logging.getLogger(__name__)
 
 _references = ['MartinezSanchez2014']
-__version__ = '3.2.1'
+__version__ = '3.3.0'
 _logo = "icon.png"
 
 

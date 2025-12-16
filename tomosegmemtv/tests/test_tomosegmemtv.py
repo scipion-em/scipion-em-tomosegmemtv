@@ -23,70 +23,63 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-from os.path import join, exists
 import pyworkflow.tests as pwtests
-from pwem.tests.workflows import TestWorkflow
-from pyworkflow.utils import magentaStr, removeBaseExt, createLink
+from pyworkflow.utils import magentaStr, createLink
+from tomo.objects import SetOfTomoMasks, SetOfTomograms
 from tomo.protocols import ProtImportTomograms
+from tomo.protocols.protocol_import_tomograms import OUTPUT_NAME
+from tomo.tests import TOMOSEGMEMTV_TEST_DATASET, DataSet_Tomosegmemtv
+from tomo.tests.test_base_centralized_layer import TestBaseCentralizedLayer
 from tomosegmemtv.protocols import ProtTomoSegmenTV
 from tomosegmemtv.protocols.protocol_tomosegmentv import outputObjects
 
 
-class TestTomosegmemTV(TestWorkflow):
+class TestTomosegmemTV(TestBaseCentralizedLayer):
     virtualTomo2 = None
     virtualTomo1 = None
+    samplingRate = DataSet_Tomosegmemtv.sRate.value
+    tomoDims = DataSet_Tomosegmemtv.tomoDims.value
 
     @classmethod
     def setUpClass(cls):
         pwtests.setupTestProject(cls)
-        ds = pwtests.DataSet.getDataSet('tomosegmemtv')
+        ds = pwtests.DataSet.getDataSet(TOMOSEGMEMTV_TEST_DATASET)
         cls.ds = ds
-        cls.samplingRate = 1
         # Because only one tomogram is provided in the tutorial, 2 links will be created pointing to the same file, so
         # they can be interpreted as a set of two tomograms, making the test complexity closer to the real usage
         cls.virtualTomos = ['vTomo1', 'vTomo2']
-        virtualTomos = [join(ds.getPath(), fpath + '.mrc') for fpath in cls.virtualTomos]
+        virtualTomos = [cls.getOutputPath( fpath + '.mrc') for fpath in cls.virtualTomos]
         [createLink(ds.getFile('tomogram'), virtualTomo) for virtualTomo in virtualTomos]
 
-    def _importTomograms(self):
+    def _importTomograms(self) -> SetOfTomograms:
         print(magentaStr("\n==> Importing data - tomograms:"))
         protImportTomo = self.newProtocol(
             ProtImportTomograms,
-            filesPath=self.ds.getPath(),
+            filesPath=self.getOutputPath(),
             filesPattern='vTomo*.mrc',
             samplingRate=self.samplingRate
         )
         protImportTomo = self.launchProtocol(protImportTomo)
-        tomoSet = protImportTomo.Tomograms
+        return getattr(protImportTomo, OUTPUT_NAME, None)
 
-        # Validate output tomograms
-        self.assertSetSize(tomoSet, size=2)
-        self.assertEqual(tomoSet.getSamplingRate(), self.samplingRate)
-        self.assertEqual(tomoSet.getDim(), (141, 281, 91))
-
-        return protImportTomo
-
-    def _runTomosegmemTV(self, protImportTomo:ProtImportTomograms):
+    def _runTomosegmemTV(self, inTomograms: SetOfTomograms) -> SetOfTomoMasks:
         print(magentaStr("\n==> Segmenting the membranes:"))
         protTomosegmemTV = self.newProtocol(
             ProtTomoSegmenTV,
-            inTomos=protImportTomo.Tomograms,
+            inTomos=inTomograms,
             mbThkPix=2,
             mbScaleFactor=10,
             blackOverWhite=False
         )
         protTomosegmemTV = self.launchProtocol(protTomosegmemTV)
-        tomoMaskSet = getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None)
-
-        # Check output set
-        self.assertSetSize(tomoMaskSet, size=2)
-        self.assertEqual(tomoMaskSet.getSamplingRate(), self.samplingRate)
-        self.assertEqual(tomoMaskSet.getDim(), (141, 281, 91))
-
-        # Check generated files
-        for file in self.virtualTomos:
-            self.assertTrue(exists(protTomosegmemTV._getExtraPath(removeBaseExt(file) + '_flt.mrc')))
+        return getattr(protTomosegmemTV, outputObjects.tomoMasks.name, None)
 
     def test_tomosegmemtv(self):
-        protImportTomo = self._importTomograms()
-        self._runTomosegmemTV(protImportTomo)
+        importedTomos = self._importTomograms()
+        tomoMasks = self._runTomosegmemTV(importedTomos)
+        # Check output set
+        self.checkTomoMasks(tomoMasks,
+                            expectedSetSize=2,
+                            expectedSRate=self.samplingRate,
+                            expectedDimensions=self.tomoDims,
+                            isHeterogeneousSet=False)
