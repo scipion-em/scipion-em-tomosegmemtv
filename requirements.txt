@@ -1,3 +1,4 @@
-scipion-em-tomo >= 3.9.1
+scipion-pyworkflow @ git+https://github.com/scipion-em/scipion-pyworkflow.git@v3.11.3
+scipion-em-tomo @ git+https://github.com/scipion-em/scipion-em-tomo.git@v3.11.2
 mrcfile
 scipy
